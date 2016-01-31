@@ -121,5 +121,3 @@ def command( comPort, cmd ):
 					inkex.errormsg( gettext.gettext( 'EBB Serial Timeout.') )
 		except:
 			pass 
-
-

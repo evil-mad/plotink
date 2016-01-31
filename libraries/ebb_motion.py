@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.2, Dated January 11, 2016.
+# Version 0.3, Dated January 31, 2016.
 #
 #
 # The MIT License (MIT)
@@ -34,8 +34,7 @@ import ebb_serial
 
 
 def version():
-	return "0.2"	# Version number for this document
-
+	return "0.3"	# Version number for this document
 
 def doTimedPause( portName, nPause ):
 	if (portName is not None):
@@ -48,8 +47,7 @@ def doTimedPause( portName, nPause ):
 					td = int( 1 ) # don't allow zero-time moves
 			ebb_serial.command( portName, 'SM,' + str( td ) + ',0,0\r')		
 			nPause -= td
-			
-			
+
 def sendEnableMotors( portName, Res ):
 	if (Res < 0):
 		Res = 0
@@ -81,9 +79,14 @@ def sendPenUp( portName, PenDelay ):
 		ebb_serial.command( portName, 'SP,1\r')		
 		if (PenDelay > 0):
 			doTimedPause( portName,PenDelay)
-		
+
 def sendPenDown( portName, PenDelay ):
 	if (portName is not None):
 		ebb_serial.command( portName, 'SP,0\r')	
 		if (PenDelay > 0):
 			doTimedPause( portName,PenDelay)	
+
+def doXYMove( portName, deltaX, deltaY, duration ):
+	if (portName is not None):
+		strOutput = ','.join( ['SM', str( duration ), str( deltaY ), str( deltaX )] ) + '\r'
+		ebb_serial.command( portName, strOutput)					
