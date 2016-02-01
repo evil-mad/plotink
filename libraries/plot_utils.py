@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.1, Dated January 8, 2016.
+# Version 0.2, Dated February 1, 2016.
 #
 #
 # The MIT License (MIT)
@@ -35,7 +35,7 @@ import cspsubdiv
 from bezmisc import *
 
 def version():
-	return "0.1"	# Version number for this document
+	return "0.2"	# Version number for this document
 
 def distance( x, y ):
 	'''
@@ -55,6 +55,15 @@ def parseLengthWithUnits( str ):
 	s = str.strip()
 	if s[-2:] == 'px':
 		s = s[:-2]
+	elif s[-2:] == 'in':		
+		s = s[:-2]
+		u = 'in'		
+	elif s[-2:] == 'mm':		
+		s = s[:-2]
+		u = 'mm'			
+	elif s[-2:] == 'cm':		
+		s = s[:-2]
+		u = 'cm'			
 	elif s[-1:] == '%':
 		u = '%'
 		s = s[:-1]
@@ -90,6 +99,27 @@ def getLength( altself, name, default ):
 		# No width specified; assume the default value
 		return float( default )
 
+def getLengthInches( altself, name ):
+	'''
+	Get the <svg> attribute with name "name" and default value "default"
+	Parse the attribute into a value and associated units.  Then, accept
+	units of inches ('in'), millimeters ('mm'), or centimeters ('cm')
+	'''
+	str = altself.svg.get( name )
+	if str:
+		v, u = parseLengthWithUnits( str )
+		if not v:
+			# Couldn't parse the value
+			return None
+		elif  u == 'in' :
+			return v
+		elif u == 'mm':
+			return (float( v ) / 25.4)
+		elif u == 'cm':
+			return (float( v ) / 2.54)
+		else:
+			# Unsupported units
+			return None
 
 def subdivideCubicPath( sp, flat, i=1 ):
 	"""
