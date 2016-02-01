@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.3, Dated January 31, 2016.
+# Version 0.4, Dated January 31, 2016.
 #
 #
 # The MIT License (MIT)
@@ -34,7 +34,7 @@ import ebb_serial
 
 
 def version():
-	return "0.3"	# Version number for this document
+	return "0.4"	# Version number for this document
 
 def doTimedPause( portName, nPause ):
 	if (portName is not None):
@@ -87,6 +87,16 @@ def sendPenDown( portName, PenDelay ):
 			doTimedPause( portName,PenDelay)	
 
 def doXYMove( portName, deltaX, deltaY, duration ):
+	# Move X/Y axes as: "SM,<move_duration>,<axis1>,<axis2><CR>"
+	# Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
+	# On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
 	if (portName is not None):
 		strOutput = ','.join( ['SM', str( duration ), str( deltaY ), str( deltaX )] ) + '\r'
-		ebb_serial.command( portName, strOutput)					
+		ebb_serial.command( portName, strOutput)
+
+def doABMove( portName, deltaA, deltaB, duration ):
+	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
+	# Then, <Axis1> moves by <AxisA> + <AxisB>, and <Axis2> as <AxisA> - <AxisB>
+	if (portName is not None):
+		strOutput = ','.join( ['XM', str( duration ), str( deltaA ), str( deltaB )] ) + '\r'
+		ebb_serial.command( portName, strOutput)				
