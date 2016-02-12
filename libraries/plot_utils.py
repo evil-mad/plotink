@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.2, Dated February 1, 2016.
+# Version 0.3, Dated February 12, 2016.
 #
 #
 # The MIT License (MIT)
@@ -35,7 +35,7 @@ import cspsubdiv
 from bezmisc import *
 
 def version():
-	return "0.2"	# Version number for this document
+	return "0.3"	# Version number for this document
 
 def distance( x, y ):
 	'''
@@ -153,3 +153,14 @@ def subdivideCubicPath( sp, flat, i=1 ):
 		p = [one[2], one[3], two[1]]
 		sp[i:1] = [p]
 
+
+def checkLimits( value, lowerBound, upperBound ):
+	#Check machine size limit; truncate at edges
+	if (value > upperBound):
+		return upperBound, True
+	if (value < lowerBound):
+		return lowerBound, True	
+	return value, False	
+	
+	
+	
