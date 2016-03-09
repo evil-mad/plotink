@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.3, Dated February 12, 2016.
+# Version 0.4, Dated February 22, 2016.
 #
 #
 # The MIT License (MIT)
@@ -82,7 +82,8 @@ def getLength( altself, name, default ):
 	Parse the attribute into a value and associated units.  Then, accept
 	no units (''), units of pixels ('px'), and units of percentage ('%').
 	'''
-	str = altself.svg.get( name )
+	str = altself.document.getroot().get( name )
+
 	if str:
 		v, u = parseLengthWithUnits( str )
 		if not v:
@@ -90,6 +91,12 @@ def getLength( altself, name, default ):
 			return None
 		elif ( u == '' ) or ( u == 'px' ):
 			return v
+		elif  u == 'in' :
+			return (float( v ) * 90.0)		#90 px per inch, as of Inkscape 0.91
+		elif u == 'mm':
+			return (float( v ) * 90.0 / 25.4)
+		elif u == 'cm':
+			return (float( v ) * 90.0 / 2.54)
 		elif u == '%':
 			return float( default ) * v / 100.0
 		else:
@@ -105,7 +112,7 @@ def getLengthInches( altself, name ):
 	Parse the attribute into a value and associated units.  Then, accept
 	units of inches ('in'), millimeters ('mm'), or centimeters ('cm')
 	'''
-	str = altself.svg.get( name )
+	str = altself.document.getroot().get( name )
 	if str:
 		v, u = parseLengthWithUnits( str )
 		if not v:
@@ -163,4 +170,63 @@ def checkLimits( value, lowerBound, upperBound ):
 	return value, False	
 	
 	
+def vFinal_Vi_A_Dx(Vinitial,Acceleration,DeltaX):
+	'''
+	Kinematic calculation: Final velocity with constant linear acceleration. 
 	
+	Calculate and return the (real) final velocity, given an initial velocity, 
+		acceleration rate, and distance interval.
+
+	Uses the kinematic equation Vf^2 = 2 a D_x + Vi^2, where 
+			Vf is the final velocity, 
+			a is the acceleration rate, 
+			D_x (delta x) is the distance interval, and
+			Vi is the initial velocity.	
+			
+	We are looking at the positive root only-- if the argument of the sqrt
+		is less than zero, return -1, to indicate a failure.		
+	'''		
+	FinalVSquared = ( 2 * Acceleration * DeltaX ) +	( Vinitial * Vinitial )
+	if (FinalVSquared > 0):
+		return sqrt(FinalVSquared)	
+	else:
+		return -1		
+
+def vInitial_VF_A_Dx(VFinal,Acceleration,DeltaX):
+	'''
+	Kinematic calculation: Maximum allowed initial velocity to arrive at distance X
+	with specified final velocity, and given maximum linear acceleration. 
+	
+	Calculate and return the (real) initial velocity, given an final velocity, 
+		acceleration rate, and distance interval.
+
+	Uses the kinematic equation Vi^2 = Vf^2 - 2 a D_x , where 
+			Vf is the final velocity, 
+			a is the acceleration rate, 
+			D_x (delta x) is the distance interval, and
+			Vi is the initial velocity.	
+			
+	We are looking at the positive root only-- if the argument of the sqrt
+		is less than zero, return -1, to indicate a failure.	
+	'''		
+	IntialVSquared = ( VFinal * VFinal )  - ( 2 * Acceleration * DeltaX )
+	if (IntialVSquared > 0):
+		return sqrt(IntialVSquared)	
+	else:
+		return -1		
+
+
+
+
+
+
+
+
+def dotProductXY( inputVectorFirst, inputVectorSecond):
+	temp = inputVectorFirst[0] * inputVectorSecond[0] + inputVectorFirst[1] * inputVectorSecond[1]
+	if (temp > 1):
+		return 1
+	elif (temp < -1):
+		return -1
+	else:
+		return temp 	
