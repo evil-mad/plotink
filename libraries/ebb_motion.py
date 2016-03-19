@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.4, Dated January 31, 2016.
+# Version 0.5, Dated January 31, 2016.
 #
 #
 # The MIT License (MIT)
@@ -85,6 +85,15 @@ def sendPenDown( portName, PenDelay ):
 		ebb_serial.command( portName, 'SP,0\r')	
 		if (PenDelay > 0):
 			doTimedPause( portName,PenDelay)	
+
+def doXYAccelMove( portName, deltaX, deltaY, vInitial, vFinal ):
+	# Move X/Y axes as: "AM,<initial_velocity>,<final_velocity>,<axis1>,<axis2><CR>"
+	# Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
+	# On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
+	# Note that minimum move duration is 5 ms.
+	if (portName is not None):
+		strOutput = ','.join( ['AM', str( vInitial ), str( vFinal ), str( deltaX ), str( deltaY )] ) + '\r'
+		ebb_serial.command( portName, strOutput)
 
 def doXYMove( portName, deltaX, deltaY, duration ):
 	# Move X/Y axes as: "SM,<move_duration>,<axis1>,<axis2><CR>"

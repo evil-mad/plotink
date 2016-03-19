@@ -216,12 +216,6 @@ def vInitial_VF_A_Dx(VFinal,Acceleration,DeltaX):
 		return -1		
 
 
-
-
-
-
-
-
 def dotProductXY( inputVectorFirst, inputVectorSecond):
 	temp = inputVectorFirst[0] * inputVectorSecond[0] + inputVectorFirst[1] * inputVectorSecond[1]
 	if (temp > 1):
