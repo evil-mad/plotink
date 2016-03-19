@@ -34,7 +34,7 @@ import ebb_serial
 
 
 def version():
-	return "0.4"	# Version number for this document
+	return "0.5"	# Version number for this document
 
 def doTimedPause( portName, nPause ):
 	if (portName is not None):
@@ -91,6 +91,7 @@ def doXYAccelMove( portName, deltaX, deltaY, vInitial, vFinal ):
 	# Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
 	# On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
 	# Note that minimum move duration is 5 ms.
+	# Important: Requires firmware version 2.4 or higher.
 	if (portName is not None):
 		strOutput = ','.join( ['AM', str( vInitial ), str( vFinal ), str( deltaX ), str( deltaY )] ) + '\r'
 		ebb_serial.command( portName, strOutput)
