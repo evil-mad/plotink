@@ -35,7 +35,7 @@ import cspsubdiv
 from bezmisc import *
 
 def version():
-	return "0.3"	# Version number for this document
+	return "0.4"	# Version number for this document
 
 def distance( x, y ):
 	'''
