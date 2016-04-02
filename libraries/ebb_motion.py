@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.5, Dated January 31, 2016.
+# Version 0.6, Dated April 2, 2016.
 #
 #
 # The MIT License (MIT)
@@ -32,9 +32,8 @@
 
 import ebb_serial
 
-
 def version():
-	return "0.5"	# Version number for this document
+	return "0.6"	# Version number for this document
 
 def doTimedPause( portName, nPause ):
 	if (portName is not None):
@@ -64,27 +63,25 @@ def sendEnableMotors( portName, Res ):
 
 def sendDisableMotors( portName ):
 	if (portName is not None):
-		ebb_serial.command( portName, 'EM,0,0\r')	
-		
+		ebb_serial.command( portName, 'EM,0,0\r')
+
 def QueryPRGButton( portName ):
 	if (portName is not None):
 		return ebb_serial.query( portName, 'QB\r' )
 
 def TogglePen( portName ):
 	if (portName is not None):
-		ebb_serial.command( portName, 'TP\r')		
-		
+		ebb_serial.command( portName, 'TP\r')
+
 def sendPenUp( portName, PenDelay ):
 	if (portName is not None):
-		ebb_serial.command( portName, 'SP,1\r')		
-		if (PenDelay > 0):
-			doTimedPause( portName,PenDelay)
+		strOutput = ','.join( ['SP,1', str( PenDelay )] ) + '\r'
+		ebb_serial.command( portName, strOutput)
 
 def sendPenDown( portName, PenDelay ):
 	if (portName is not None):
-		ebb_serial.command( portName, 'SP,0\r')	
-		if (PenDelay > 0):
-			doTimedPause( portName,PenDelay)	
+		strOutput = ','.join( ['SP,0', str( PenDelay )] ) + '\r'
+		ebb_serial.command( portName, strOutput)
 
 def doXYAccelMove( portName, deltaX, deltaY, vInitial, vFinal ):
 	# Move X/Y axes as: "AM,<initial_velocity>,<final_velocity>,<axis1>,<axis2><CR>"
