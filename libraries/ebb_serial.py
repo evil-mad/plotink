@@ -35,7 +35,7 @@ import serial
 import inkex
 
 def version():
-	return "0.1"	# Version number for this document
+	return "0.2"	# Version number for this document
 
 def findPort():	
 	#Find a single EiBotBoard connected to a USB port.
