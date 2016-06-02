@@ -5,8 +5,9 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.1, Dated January 8, 2016.
+# Version 0.2, Dated June 1, 2016.
 #
+# Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
 # The MIT License (MIT)
 # 
@@ -31,6 +32,7 @@
 # SOFTWARE.
 
 import serial
+import inkex
 
 def version():
 	return "0.1"	# Version number for this document
@@ -102,6 +104,11 @@ def query( comPort, cmd ):
 			comPort.write( cmd )
 			response = comPort.readline()
 			unused_response = comPort.readline() #read in extra blank/OK line
+			nRetryCount = 0
+			while ( len(unused_response) == 0 ) and ( nRetryCount < 100 ):
+				# get new response to replace null response if necessary
+				unused_response = comPort.readline()
+				nRetryCount += 1
 		except:
 			inkex.errormsg( gettext.gettext( "Error reading serial data." ) )
 		return response
@@ -113,6 +120,11 @@ def command( comPort, cmd ):
 		try:
 			comPort.write( cmd )
 			response = comPort.readline()
+			nRetryCount = 0
+			while ( len(response) == 0 ) and ( nRetryCount < 100 ):
+				# get new response to replace null response if necessary
+				response = comPort.readline()
+				nRetryCount += 1
 			if ( response != 'OK\r\n' ):
 				if ( response != '' ):
 					inkex.errormsg( 'After command ' + cmd + ',' )
