@@ -103,6 +103,11 @@ def query( comPort, cmd ):
 		try:
 			comPort.write( cmd )
 			response = comPort.readline()
+			nRetryCount = 0
+			while ( len(response) == 0 ) and ( nRetryCount < 100 ):
+				# get new response to replace null response if necessary
+				response = comPort.readline()
+				nRetryCount += 1
 			unused_response = comPort.readline() #read in extra blank/OK line
 			nRetryCount = 0
 			while ( len(unused_response) == 0 ) and ( nRetryCount < 100 ):
