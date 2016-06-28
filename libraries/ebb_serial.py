@@ -33,6 +33,7 @@
 
 import serial
 import inkex
+import gettext
 
 def version():
 	return "0.2"	# Version number for this document
@@ -108,6 +109,7 @@ def query( comPort, cmd ):
 				# get new response to replace null response if necessary
 				response = comPort.readline()
 				nRetryCount += 1
+			time.sleep(0.01)  #pause before issuing next command
 			unused_response = comPort.readline() #read in extra blank/OK line
 			nRetryCount = 0
 			while ( len(unused_response) == 0 ) and ( nRetryCount < 100 ):
