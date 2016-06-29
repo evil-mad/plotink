@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.2, Dated June 1, 2016.
+# Version 0.3, Dated June 28, 2016.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -36,7 +36,7 @@ import inkex
 import gettext
 
 def version():
-	return "0.2"	# Version number for this document
+	return "0.3"	# Version number for this document
 
 def findPort():	
 	#Find a single EiBotBoard connected to a USB port.
@@ -109,13 +109,15 @@ def query( comPort, cmd ):
 				# get new response to replace null response if necessary
 				response = comPort.readline()
 				nRetryCount += 1
-			time.sleep(0.01)  #pause before issuing next command
-			unused_response = comPort.readline() #read in extra blank/OK line
-			nRetryCount = 0
-			while ( len(unused_response) == 0 ) and ( nRetryCount < 100 ):
-				# get new response to replace null response if necessary
-				unused_response = comPort.readline()
-				nRetryCount += 1
+			if cmd.strip().lower() not in ["v","i","a", "mr","pi","qm"]:
+				#Most queries return an "OK" after the data requested.
+				#We skip this for those few queries that do not return an extra line.
+				unused_response = comPort.readline() #read in extra blank/OK line
+				nRetryCount = 0
+				while ( len(unused_response) == 0 ) and ( nRetryCount < 100 ):
+					# get new response to replace null response if necessary
+					unused_response = comPort.readline()
+					nRetryCount += 1
 		except:
 			inkex.errormsg( gettext.gettext( "Error reading serial data." ) )
 		return response
@@ -132,11 +134,19 @@ def command( comPort, cmd ):
 				# get new response to replace null response if necessary
 				response = comPort.readline()
 				nRetryCount += 1
-			if ( response != 'OK\r\n' ):
+				inkex.errormsg("Retry" + str(nRetryCount))
+			if response.strip().startswith("OK"):
+				pass  # 	inkex.errormsg( 'OK after command: ' + cmd ) #Debug option: indicate which command.
+			else:
 				if ( response != '' ):
-					inkex.errormsg( 'After command ' + cmd + ',' )
-					inkex.errormsg( 'Received bad response from EBB: ' + str( response ) + '.' )
+					inkex.errormsg( 'Error: Unexpected response from EBB.') 
+					inkex.errormsg( '   Command: ' + cmd.strip() )
+					inkex.errormsg( '   Response: ' + str( response.strip() ) )
 				else:
-					inkex.errormsg( gettext.gettext( 'EBB Serial Timeout.') )
+					inkex.errormsg( 'EBB Serial Timeout after command: ' + cmd )
+
+# 		except Exception,e: 
+# 			inkex.errormsg(  str(e))	#For debugging: one may wish to display the error.
 		except:
+			inkex.errormsg( 'Failed after command: ' + cmd )
 			pass 
