@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.4, Dated June 28, 2016.
+# Version 0.5, Dated October 29, 2016.
 #
 #
 # The MIT License (MIT)
@@ -35,7 +35,9 @@ import cspsubdiv
 from bezmisc import *
 
 def version():
-	return "0.4"	# Version number for this document
+	return "0.5"	# Version number for this document
+
+pxPerInch = 90.0	#90 px per inch, as of Inkscape 0.91
 
 def distance( x, y ):
 	'''
@@ -93,11 +95,11 @@ def getLength( altself, name, default ):
 		elif ( u == '' ) or ( u == 'px' ):
 			return v
 		elif  u == 'in' :
-			return (float( v ) * 90.0)		#90 px per inch, as of Inkscape 0.91
+			return (float( v ) * pxPerInch)		
 		elif u == 'mm':
-			return (float( v ) * 90.0 / 25.4)
+			return (float( v ) * pxPerInch / 25.4)
 		elif u == 'cm':
-			return (float( v ) * 90.0 / 2.54)
+			return (float( v ) * pxPerInch / 2.54)
 		elif u == '%':
 			return float( default ) * v / 100.0
 		else:
