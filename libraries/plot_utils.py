@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.4, Dated February 22, 2016.
+# Version 0.4, Dated June 28, 2016.
 #
 #
 # The MIT License (MIT)
@@ -81,6 +81,7 @@ def getLength( altself, name, default ):
 	Get the <svg> attribute with name "name" and default value "default"
 	Parse the attribute into a value and associated units.  Then, accept
 	no units (''), units of pixels ('px'), and units of percentage ('%').
+	Return value in px.
 	'''
 	str = altself.document.getroot().get( name )
 
@@ -111,6 +112,7 @@ def getLengthInches( altself, name ):
 	Get the <svg> attribute with name "name" and default value "default"
 	Parse the attribute into a value and associated units.  Then, accept
 	units of inches ('in'), millimeters ('mm'), or centimeters ('cm')
+	Return value in inches.
 	'''
 	str = altself.document.getroot().get( name )
 	if str:
