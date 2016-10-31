@@ -37,7 +37,9 @@ from bezmisc import *
 def version():
 	return "0.5"	# Version number for this document
 
-pxPerInch = 90.0	#90 px per inch, as of Inkscape 0.91
+pxPerInch = 90.0	# 90 px per inch, as of Inkscape 0.91
+					# Note that the SVG specification is for 96 px per inch; 
+					# Expect a change to 96 as of Inkscape 0.92.
 
 def distance( x, y ):
 	'''
@@ -55,17 +57,26 @@ def parseLengthWithUnits( str ):
 	'''
 	u = 'px'
 	s = str.strip()
-	if s[-2:] == 'px':
+	if s[-2:] == 'px':		# pixels, at a size of pxPerInch per inch
 		s = s[:-2]
-	elif s[-2:] == 'in':		
+	elif s[-2:] == 'in':	# inches
 		s = s[:-2]
 		u = 'in'		
-	elif s[-2:] == 'mm':		
+	elif s[-2:] == 'mm':	# millimeters
 		s = s[:-2]
 		u = 'mm'			
-	elif s[-2:] == 'cm':		
+	elif s[-2:] == 'cm':	# centimeters
 		s = s[:-2]
-		u = 'cm'			
+		u = 'cm'	
+	elif s[-2:] == 'pt':	# points	1pt = 1/72th of 1in
+		s = s[:-2]
+		u = 'pt'			
+	elif s[-2:] == 'pc':	# picas!	1pc = 1/6th of 1in
+		s = s[:-2]
+		u = 'pc'	
+	elif ((s[-1:] == 'Q') or (s[-1:] == 'q')):		# quarter-millimeters. 1q = 1/40th of 1cm
+		s = s[:-1]
+		u = 'Q'	
 	elif s[-1:] == '%':
 		u = '%'
 		s = s[:-1]
@@ -100,6 +111,12 @@ def getLength( altself, name, default ):
 			return (float( v ) * pxPerInch / 25.4)
 		elif u == 'cm':
 			return (float( v ) * pxPerInch / 2.54)
+		elif u == 'Q':
+			return (float( v ) * pxPerInch / (40.0 * 2.54))
+		elif u == 'pc':
+			return (float( v ) * pxPerInch / 6.0)
+		elif u == 'pt':
+			return (float( v ) * pxPerInch / 72.0)
 		elif u == '%':
 			return float( default ) * v / 100.0
 		else:
@@ -128,6 +145,12 @@ def getLengthInches( altself, name ):
 			return (float( v ) / 25.4)
 		elif u == 'cm':
 			return (float( v ) / 2.54)
+		elif u == 'Q':
+			return (float( v ) / (40.0 * 2.54))
+		elif u == 'pc':
+			return (float( v ) / 6.0)	
+		elif u == 'pt':
+			return (float( v ) / 72.0)
 		else:
 			# Unsupported units
 			return None
