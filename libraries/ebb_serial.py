@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.3, Dated June 28, 2016.
+# Version 0.31, Dated November 26, 2016.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -134,7 +134,7 @@ def command( comPort, cmd ):
 				# get new response to replace null response if necessary
 				response = comPort.readline()
 				nRetryCount += 1
-				inkex.errormsg("Retry" + str(nRetryCount))
+# 				inkex.errormsg("Retry" + str(nRetryCount))
 			if response.strip().startswith("OK"):
 				pass  # 	inkex.errormsg( 'OK after command: ' + cmd ) #Debug option: indicate which command.
 			else:
