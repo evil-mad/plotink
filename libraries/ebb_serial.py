@@ -5,13 +5,13 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.31, Dated November 26, 2016.
+# Version 0.4, Dated January 7, 2016.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2016 Evil Mad Scientist Laboratories
+# Copyright (c) 2017 Evil Mad Scientist Laboratories
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ import inkex
 import gettext
 
 def version():
-	return "0.3"	# Version number for this document
+	return "0.4"	# Version number for this document
 
 def findPort():	
 	#Find a single EiBotBoard connected to a USB port.
@@ -149,4 +149,13 @@ def command( comPort, cmd ):
 # 			inkex.errormsg(  str(e))	#For debugging: one may wish to display the error.
 		except:
 			inkex.errormsg( 'Failed after command: ' + cmd )
+			pass 
+
+def bootload( comPort ):
+	# Enter bootloader mode. Do not try to read back data.
+	if (comPort is not None):
+		try:
+			comPort.write( 'BL\r' )
+		except:
+			inkex.errormsg( 'Failed while trying to enter bootloader.' )
 			pass 
