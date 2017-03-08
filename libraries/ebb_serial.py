@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.4, Dated January 7, 2016.
+# Version 0.5, Dated March 7, 2017.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -32,11 +32,12 @@
 # SOFTWARE.
 
 import serial
-import inkex
 import gettext
 
+import inkex
+
 def version():
-	return "0.4"	# Version number for this document
+	return "0.5"	# Version number for this document
 
 def findPort():	
 	#Find a single EiBotBoard connected to a USB port.
@@ -68,14 +69,14 @@ def testPort( comPort ):
 	if comPort is not None:
 		try:
 			serialPort = serial.Serial( comPort, timeout=1.0 ) # 1 second timeout!
-			serialPort.write( 'v\r' )
+			serialPort.write( 'v\r'.encode('ascii') )
 			strVersion = serialPort.readline()			
-			if strVersion and strVersion.startswith( 'EBB' ):
+			if strVersion and strVersion.startswith( "EBB".encode('ascii') ):
 				return serialPort
 							
-			serialPort.write( 'v\r' ) 
+			serialPort.write( 'v\r'.encode('ascii') ) 
 			strVersion = serialPort.readline()
-			if strVersion and strVersion.startswith( 'EBB' ):
+			if strVersion and strVersion.startswith( "EBB".encode('ascii') ):
 				return serialPort					
 			serialPort.close()
 		except serial.SerialException:
@@ -102,7 +103,7 @@ def query( comPort, cmd ):
 	if (comPort is not None) and (cmd is not None):
 		response = ''
 		try:
-			comPort.write( cmd )
+			comPort.write( cmd.encode('ascii')  )
 			response = comPort.readline()
 			nRetryCount = 0
 			while ( len(response) == 0 ) and ( nRetryCount < 100 ):
@@ -127,8 +128,8 @@ def query( comPort, cmd ):
 def command( comPort, cmd ):
 	if (comPort is not None) and (cmd is not None):
 		try:
-			comPort.write( cmd )
-			response = comPort.readline()
+			comPort.write( cmd.encode('ascii') )
+			response = comPort.readline().decode('ascii')
 			nRetryCount = 0
 			while ( len(response) == 0 ) and ( nRetryCount < 100 ):
 				# get new response to replace null response if necessary
@@ -144,18 +145,15 @@ def command( comPort, cmd ):
 					inkex.errormsg( '   Response: ' + str( response.strip() ) )
 				else:
 					inkex.errormsg( 'EBB Serial Timeout after command: ' + cmd )
-
-# 		except Exception,e: 
-# 			inkex.errormsg(  str(e))	#For debugging: one may wish to display the error.
 		except:
-			inkex.errormsg( 'Failed after command: ' + cmd )
+			inkex.errormsg( 'Failed after command: ' + cmd )		
 			pass 
 
 def bootload( comPort ):
 	# Enter bootloader mode. Do not try to read back data.
 	if (comPort is not None):
 		try:
-			comPort.write( 'BL\r' )
+			comPort.write( 'BL\r'.encode('ascii') )
 		except:
 			inkex.errormsg( 'Failed while trying to enter bootloader.' )
 			pass 
