@@ -104,7 +104,7 @@ def query( comPort, cmd ):
 		response = ''
 		try:
 			comPort.write( cmd.encode('ascii')  )
-			response = comPort.readline()
+			response = comPort.readline().decode('ascii')
 			nRetryCount = 0
 			while ( len(response) == 0 ) and ( nRetryCount < 100 ):
 				# get new response to replace null response if necessary
