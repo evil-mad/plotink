@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.5, Dated March 7, 2017.
+# Version 0.7, Dated June 8, 2017.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -37,7 +37,7 @@ import gettext
 import inkex
 
 def version():
-	return "0.5"	# Version number for this document
+	return "0.7"	# Version number for this document
 
 def findPort():	
 	#Find a single EiBotBoard connected to a USB port.
@@ -135,7 +135,6 @@ def command( comPort, cmd ):
 				# get new response to replace null response if necessary
 				response = comPort.readline()
 				nRetryCount += 1
-# 				inkex.errormsg("Retry" + str(nRetryCount))
 			if response.strip().startswith("OK"):
 				pass  # 	inkex.errormsg( 'OK after command: ' + cmd ) #Debug option: indicate which command.
 			else:
@@ -157,3 +156,6 @@ def bootload( comPort ):
 		except:
 			inkex.errormsg( 'Failed while trying to enter bootloader.' )
 			pass 
+
+def queryVersion ( comPort ):
+	return query( comPort, 'V\r' ); 	#Query EBB Version String

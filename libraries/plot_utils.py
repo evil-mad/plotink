@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.5, Dated October 29, 2016.
+# Version 0.7, Dated June 8, 2017.
 #
 #
 # The MIT License (MIT)
@@ -35,7 +35,7 @@ import cspsubdiv
 from bezmisc import *
 
 def version():
-	return "0.5"	# Version number for this document
+	return "0.7"	# Version number for this document
 
 pxPerInch = 90.0	# 90 px per inch, as of Inkscape 0.91
 					# Note that the SVG specification is for 96 px per inch; 

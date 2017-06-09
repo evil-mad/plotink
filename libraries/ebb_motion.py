@@ -5,12 +5,11 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.6, Dated April 2, 2016.
-#
+# Version 0.7, Dated June 8, 2017.
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2016 Evil Mad Scientist Laboratories
+# Copyright (c) 2017 Evil Mad Scientist Laboratories
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -32,8 +31,13 @@
 
 import ebb_serial
 
-def version():
-	return "0.6"	# Version number for this document
+
+def doABMove( portName, deltaA, deltaB, duration ):
+	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
+	# Then, <Axis1> moves by <AxisA> + <AxisB>, and <Axis2> as <AxisA> - <AxisB>
+	if (portName is not None):
+		strOutput = ','.join( ['XM', str( duration ), str( deltaA ), str( deltaB )] ) + '\r'
+		ebb_serial.command( portName, strOutput)
 
 def doTimedPause( portName, nPause ):
 	if (portName is not None):
@@ -46,6 +50,40 @@ def doTimedPause( portName, nPause ):
 					td = int( 1 ) # don't allow zero-time moves
 			ebb_serial.command( portName, 'SM,' + str( td ) + ',0,0\r')		
 			nPause -= td
+
+def doXYAccelMove( portName, deltaX, deltaY, vInitial, vFinal ):
+	# Move X/Y axes as: "AM,<initial_velocity>,<final_velocity>,<axis1>,<axis2><CR>"
+	# Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
+	# On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
+	# Note that minimum move duration is 5 ms.
+	# Important: Requires firmware version 2.4 or higher.
+	if (portName is not None):
+		strOutput = ','.join( ['AM', str( vInitial ), str( vFinal ), str( deltaX ), str( deltaY )] ) + '\r'
+		ebb_serial.command( portName, strOutput)
+		
+def doXYMove( portName, deltaX, deltaY, duration ):
+	# Move X/Y axes as: "SM,<move_duration>,<axis1>,<axis2><CR>"
+	# Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
+	# On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
+	if (portName is not None):
+		strOutput = ','.join( ['SM', str( duration ), str( deltaY ), str( deltaX )] ) + '\r'
+		ebb_serial.command( portName, strOutput)
+
+def QueryPenUp( portName ):
+	if (portName is not None):
+		PenStatus = ebb_serial.query( portName, 'QP\r' )
+		if PenStatus[0] == '0':
+			return True
+		else:
+			return False
+
+def QueryPRGButton( portName ):
+	if (portName is not None):
+		return ebb_serial.query( portName, 'QB\r' )
+
+def sendDisableMotors( portName ):
+	if (portName is not None):
+		ebb_serial.command( portName, 'EM,0,0\r')
 
 def sendEnableMotors( portName, Res ):
 	if (Res < 0):
@@ -61,49 +99,43 @@ def sendEnableMotors( portName, Res ):
 		# If Res == 4, -> 2X microstepping
 		# If Res == 5, -> No microstepping
 
-def sendDisableMotors( portName ):
+def sendPenDown( portName, PenDelay ):
 	if (portName is not None):
-		ebb_serial.command( portName, 'EM,0,0\r')
-
-def QueryPRGButton( portName ):
-	if (portName is not None):
-		return ebb_serial.query( portName, 'QB\r' )
-
-def TogglePen( portName ):
-	if (portName is not None):
-		ebb_serial.command( portName, 'TP\r')
+		strOutput = ','.join( ['SP,0', str( PenDelay )] ) + '\r'
+		ebb_serial.command( portName, strOutput)
 
 def sendPenUp( portName, PenDelay ):
 	if (portName is not None):
 		strOutput = ','.join( ['SP,1', str( PenDelay )] ) + '\r'
 		ebb_serial.command( portName, strOutput)
 
-def sendPenDown( portName, PenDelay ):
+def TogglePen( portName ):
 	if (portName is not None):
-		strOutput = ','.join( ['SP,0', str( PenDelay )] ) + '\r'
-		ebb_serial.command( portName, strOutput)
+		ebb_serial.command( portName, 'TP\r')
+	
+def version():
+	return "0.7"	# Version number for this document
 
-def doXYAccelMove( portName, deltaX, deltaY, vInitial, vFinal ):
-	# Move X/Y axes as: "AM,<initial_velocity>,<final_velocity>,<axis1>,<axis2><CR>"
-	# Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
-	# On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
-	# Note that minimum move duration is 5 ms.
-	# Important: Requires firmware version 2.4 or higher.
+def setPenDownPos( portName, ServoMax ):
 	if (portName is not None):
-		strOutput = ','.join( ['AM', str( vInitial ), str( vFinal ), str( deltaX ), str( deltaY )] ) + '\r'
-		ebb_serial.command( portName, strOutput)
+		ebb_serial.command(portName,  'SC,5,' + str( ServoMax ) + '\r' )	
+		# servo_max may be in the range 1 to 65535, in units of 83 ns intervals. This sets the "Pen Down" position.
+		# http://evil-mad.github.io/EggBot/ebb.html#SC
 
-def doXYMove( portName, deltaX, deltaY, duration ):
-	# Move X/Y axes as: "SM,<move_duration>,<axis1>,<axis2><CR>"
-	# Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
-	# On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
+def setPenDownRate( portName, PenDownRate ):
 	if (portName is not None):
-		strOutput = ','.join( ['SM', str( duration ), str( deltaY ), str( deltaX )] ) + '\r'
-		ebb_serial.command( portName, strOutput)
+		ebb_serial.command(portName,  'SC,12,' + str( PenDownRate ) + '\r' )	
+		# Set the rate of change of the servo when going down.
+		# http://evil-mad.github.io/EggBot/ebb.html#SC
 
-def doABMove( portName, deltaA, deltaB, duration ):
-	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
-	# Then, <Axis1> moves by <AxisA> + <AxisB>, and <Axis2> as <AxisA> - <AxisB>
+def setPenUpPos( portName, ServoMin ):
 	if (portName is not None):
-		strOutput = ','.join( ['XM', str( duration ), str( deltaA ), str( deltaB )] ) + '\r'
-		ebb_serial.command( portName, strOutput)				
+		ebb_serial.command(portName,  'SC,4,' + str( ServoMin ) + '\r' )	
+		# servo_min may be in the range 1 to 65535, in units of 83 ns intervals. This sets the "Pen Up" position.
+		# http://evil-mad.github.io/EggBot/ebb.html#SC
+
+def setPenUpRate( portName, PenUpRate ):
+	if (portName is not None):
+		ebb_serial.command(portName,  'SC,11,' + str( PenUpRate ) + '\r' )	
+		# Set the rate of change of the servo when going up.
+		# http://evil-mad.github.io/EggBot/ebb.html#SC
