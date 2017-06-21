@@ -49,9 +49,7 @@ def distance( x, y ):
 
 def parseLengthWithUnits( str ):
 	'''
-	Parse an SVG value which may or may not have units attached
-	This version is greatly simplified in that it only allows: no units,
-	units of px, and units of %.  Everything else, it returns None for.
+	Parse an SVG value which may or may not have units attached.
 	There is a more general routine to consider in scour.py if more
 	generality is ever needed.
 	'''
@@ -87,6 +85,71 @@ def parseLengthWithUnits( str ):
 		return None, None
 
 	return v, u
+
+
+
+def unitsToUserUnits( inputString ):
+	'''
+	Custom replacement for the unittouu routine in inkex.py
+	
+	Parse the attribute into a value and associated units. 
+	Return value in user units (typically "px").
+	'''
+
+	v, u = parseLengthWithUnits( inputString )
+	if not v:
+		# Couldn't parse the value
+		return None
+	elif ( u == '' ) or ( u == 'px' ):
+		return v
+	elif  u == 'in' :
+		return (float( v ) * pxPerInch)		
+	elif u == 'mm':
+		return (float( v ) * pxPerInch / 25.4)
+	elif u == 'cm':
+		return (float( v ) * pxPerInch / 2.54)
+	elif u == 'Q':
+		return (float( v ) * pxPerInch / (40.0 * 2.54))
+	elif u == 'pc':
+		return (float( v ) * pxPerInch / 6.0)
+	elif u == 'pt':
+		return (float( v ) * pxPerInch / 72.0)
+	elif u == '%':
+		return (float( v ) / 100.0)
+	else:
+		# Unsupported units
+		return None
+
+def userUnitToUnits(distanceUU, unitString ):
+	'''
+	Custom replacement for the uutounit routine in inkex.py
+	
+	Parse the attribute into a value and associated units. 
+	Return value in user units (typically "px").
+	'''
+
+	if not distanceUU: # Couldn't parse the value
+		return None
+	elif ( unitString == '' ) or ( unitString == 'px' ):
+		return distanceUU
+	elif  unitString == 'in' :
+		return (float( distanceUU ) / (pxPerInch))		
+	elif unitString == 'mm':
+		return (float( distanceUU ) / (pxPerInch / 25.4))
+	elif unitString == 'cm':
+		return (float( distanceUU ) / (pxPerInch / 2.54))
+	elif unitString == 'Q':
+		return (float( distanceUU ) / (pxPerInch / (40.0 * 2.54)))
+	elif unitString == 'pc':
+		return (float( distanceUU ) / (pxPerInch / 6.0))
+	elif unitString == 'pt':
+		return (float( distanceUU ) / (pxPerInch / 72.0))
+	elif unitString == '%':
+		return (float( distanceUU ) * 100.0)
+	else:
+		# Unsupported units
+		return None
+
 
 def getLength( altself, name, default ):
 	'''
