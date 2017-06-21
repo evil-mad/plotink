@@ -5,12 +5,12 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.7, Dated June 8, 2017.
+# Version 0.8, Dated June 21, 2017.
 #
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2016 Evil Mad Scientist Laboratories
+# Copyright (c) 2017 Windell H. Oskay, Evil Mad Scientist Laboratories
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ import cspsubdiv
 from bezmisc import *
 
 def version():
-	return "0.7"	# Version number for this document
+	return "0.8"	# Version number for this document
 
 pxPerInch = 90.0	# 90 px per inch, as of Inkscape 0.91
 					# Note that the SVG specification is for 96 px per inch; 
@@ -87,7 +87,6 @@ def parseLengthWithUnits( str ):
 		return None, None
 
 	return v, u
-
 
 def getLength( altself, name, default ):
 	'''
@@ -187,7 +186,6 @@ def subdivideCubicPath( sp, flat, i=1 ):
 		p = [one[2], one[3], two[1]]
 		sp[i:1] = [p]
 
-
 def checkLimits( value, lowerBound, upperBound ):
 	#Check machine size limit; truncate at edges
 	if (value > upperBound):
@@ -195,7 +193,22 @@ def checkLimits( value, lowerBound, upperBound ):
 	if (value < lowerBound):
 		return lowerBound, True	
 	return value, False	
-	
+
+def checkLimits( value, lowerBound, upperBound, tolerance ):
+	# Check machine size limit; truncate at edges
+	# Allow a range of tolerance where we truncate motion without error
+
+	if (value > upperBound):
+		if (value > (upperBound + tolerance)):
+			return upperBound, True		# Truncate & throw error
+		else:
+			return upperBound, False	# Truncate with no error
+	if (value < lowerBound):
+		if (value < (lowerBound - tolerance)):
+			return lowerBound, True		# Truncate & throw error
+		else:
+			return lowerBound, False	# Truncate with no error
+	return value, False					# Return original value without error
 	
 def vFinal_Vi_A_Dx(Vinitial,Acceleration,DeltaX):
 	'''
@@ -217,7 +230,7 @@ def vFinal_Vi_A_Dx(Vinitial,Acceleration,DeltaX):
 	if (FinalVSquared > 0):
 		return sqrt(FinalVSquared)	
 	else:
-		return -1		
+		return -1
 
 def vInitial_VF_A_Dx(VFinal,Acceleration,DeltaX):
 	'''
@@ -240,7 +253,7 @@ def vInitial_VF_A_Dx(VFinal,Acceleration,DeltaX):
 	if (IntialVSquared > 0):
 		return sqrt(IntialVSquared)	
 	else:
-		return -1		
+		return -1
 
 
 def dotProductXY( inputVectorFirst, inputVectorSecond):
@@ -250,4 +263,4 @@ def dotProductXY( inputVectorFirst, inputVectorSecond):
 	elif (temp < -1):
 		return -1
 	else:
-		return temp 	
+		return temp 
