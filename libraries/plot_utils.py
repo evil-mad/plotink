@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.8, Dated June 21, 2017.
+# Version 0.8.1, Dated June 29, 2017.
 #
 #
 # The MIT License (MIT)
@@ -41,115 +41,44 @@ pxPerInch = 90.0	# 90 px per inch, as of Inkscape 0.91
 					# Note that the SVG specification is for 96 px per inch; 
 					# Expect a change to 96 as of Inkscape 0.92.
 
+def checkLimits( value, lowerBound, upperBound ):
+	#Check machine size limit; truncate at edges
+	if (value > upperBound):
+		return upperBound, True
+	if (value < lowerBound):
+		return lowerBound, True	
+	return value, False	
+
+def checkLimits( value, lowerBound, upperBound, tolerance ):
+	# Check machine size limit; truncate at edges
+	# Allow a range of tolerance where we truncate motion without error
+
+	if (value > upperBound):
+		if (value > (upperBound + tolerance)):
+			return upperBound, True		# Truncate & throw error
+		else:
+			return upperBound, False	# Truncate with no error
+	if (value < lowerBound):
+		if (value < (lowerBound - tolerance)):
+			return lowerBound, True		# Truncate & throw error
+		else:
+			return lowerBound, False	# Truncate with no error
+	return value, False					# Return original value without error
+
 def distance( x, y ):
 	'''
 	Pythagorean theorem!
 	'''
 	return sqrt( x * x + y * y )
 
-def parseLengthWithUnits( str ):
-	'''
-	Parse an SVG value which may or may not have units attached.
-	There is a more general routine to consider in scour.py if more
-	generality is ever needed.
-	'''
-	u = 'px'
-	s = str.strip()
-	if s[-2:] == 'px':		# pixels, at a size of pxPerInch per inch
-		s = s[:-2]
-	elif s[-2:] == 'in':	# inches
-		s = s[:-2]
-		u = 'in'		
-	elif s[-2:] == 'mm':	# millimeters
-		s = s[:-2]
-		u = 'mm'			
-	elif s[-2:] == 'cm':	# centimeters
-		s = s[:-2]
-		u = 'cm'	
-	elif s[-2:] == 'pt':	# points	1pt = 1/72th of 1in
-		s = s[:-2]
-		u = 'pt'			
-	elif s[-2:] == 'pc':	# picas!	1pc = 1/6th of 1in
-		s = s[:-2]
-		u = 'pc'	
-	elif ((s[-1:] == 'Q') or (s[-1:] == 'q')):		# quarter-millimeters. 1q = 1/40th of 1cm
-		s = s[:-1]
-		u = 'Q'	
-	elif s[-1:] == '%':
-		u = '%'
-		s = s[:-1]
-
-	try:
-		v = float( s )
-	except:
-		return None, None
-
-	return v, u
-
-
-
-def unitsToUserUnits( inputString ):
-	'''
-	Custom replacement for the unittouu routine in inkex.py
-	
-	Parse the attribute into a value and associated units. 
-	Return value in user units (typically "px").
-	'''
-
-	v, u = parseLengthWithUnits( inputString )
-	if not v:
-		# Couldn't parse the value
-		return None
-	elif ( u == '' ) or ( u == 'px' ):
-		return v
-	elif  u == 'in' :
-		return (float( v ) * pxPerInch)		
-	elif u == 'mm':
-		return (float( v ) * pxPerInch / 25.4)
-	elif u == 'cm':
-		return (float( v ) * pxPerInch / 2.54)
-	elif u == 'Q':
-		return (float( v ) * pxPerInch / (40.0 * 2.54))
-	elif u == 'pc':
-		return (float( v ) * pxPerInch / 6.0)
-	elif u == 'pt':
-		return (float( v ) * pxPerInch / 72.0)
-	elif u == '%':
-		return (float( v ) / 100.0)
+def dotProductXY( inputVectorFirst, inputVectorSecond):
+	temp = inputVectorFirst[0] * inputVectorSecond[0] + inputVectorFirst[1] * inputVectorSecond[1]
+	if (temp > 1):
+		return 1
+	elif (temp < -1):
+		return -1
 	else:
-		# Unsupported units
-		return None
-
-def userUnitToUnits(distanceUU, unitString ):
-	'''
-	Custom replacement for the uutounit routine in inkex.py
-	
-	Parse the attribute into a value and associated units. 
-	Return value in user units (typically "px").
-	'''
-
-	if not distanceUU: # Couldn't parse the value
-		return None
-	elif ( unitString == '' ) or ( unitString == 'px' ):
-		return distanceUU
-	elif  unitString == 'in' :
-		return (float( distanceUU ) / (pxPerInch))		
-	elif unitString == 'mm':
-		return (float( distanceUU ) / (pxPerInch / 25.4))
-	elif unitString == 'cm':
-		return (float( distanceUU ) / (pxPerInch / 2.54))
-	elif unitString == 'Q':
-		return (float( distanceUU ) / (pxPerInch / (40.0 * 2.54)))
-	elif unitString == 'pc':
-		return (float( distanceUU ) / (pxPerInch / 6.0))
-	elif unitString == 'pt':
-		return (float( distanceUU ) / (pxPerInch / 72.0))
-	elif unitString == '%':
-		return (float( distanceUU ) * 100.0)
-	else:
-		# Unsupported units
-		return None
-
+		return temp 
 
 def getLength( altself, name, default ):
 	'''
@@ -217,6 +146,77 @@ def getLengthInches( altself, name ):
 			# Unsupported units
 			return None
 
+def parseLengthWithUnits( str ):
+	'''
+	Parse an SVG value which may or may not have units attached.
+	There is a more general routine to consider in scour.py if more
+	generality is ever needed.
+	'''
+	u = 'px'
+	s = str.strip()
+	if s[-2:] == 'px':		# pixels, at a size of pxPerInch per inch
+		s = s[:-2]
+	elif s[-2:] == 'in':	# inches
+		s = s[:-2]
+		u = 'in'		
+	elif s[-2:] == 'mm':	# millimeters
+		s = s[:-2]
+		u = 'mm'			
+	elif s[-2:] == 'cm':	# centimeters
+		s = s[:-2]
+		u = 'cm'	
+	elif s[-2:] == 'pt':	# points	1pt = 1/72th of 1in
+		s = s[:-2]
+		u = 'pt'			
+	elif s[-2:] == 'pc':	# picas!	1pc = 1/6th of 1in
+		s = s[:-2]
+		u = 'pc'	
+	elif ((s[-1:] == 'Q') or (s[-1:] == 'q')):		# quarter-millimeters. 1q = 1/40th of 1cm
+		s = s[:-1]
+		u = 'Q'	
+	elif s[-1:] == '%':
+		u = '%'
+		s = s[:-1]
+
+	try:
+		v = float( s )
+	except:
+		return None, None
+
+	return v, u
+
+def unitsToUserUnits( inputString ):
+	'''
+	Custom replacement for the unittouu routine in inkex.py
+	
+	Parse the attribute into a value and associated units. 
+	Return value in user units (typically "px").
+	'''
+
+	v, u = parseLengthWithUnits( inputString )
+	if not v:
+		# Couldn't parse the value
+		return None
+	elif ( u == '' ) or ( u == 'px' ):
+		return v
+	elif  u == 'in' :
+		return (float( v ) * pxPerInch)		
+	elif u == 'mm':
+		return (float( v ) * pxPerInch / 25.4)
+	elif u == 'cm':
+		return (float( v ) * pxPerInch / 2.54)
+	elif u == 'Q':
+		return (float( v ) * pxPerInch / (40.0 * 2.54))
+	elif u == 'pc':
+		return (float( v ) * pxPerInch / 6.0)
+	elif u == 'pt':
+		return (float( v ) * pxPerInch / 72.0)
+	elif u == '%':
+		return (float( v ) / 100.0)
+	else:
+		# Unsupported units
+		return None
+
 def subdivideCubicPath( sp, flat, i=1 ):
 	"""
 	Break up a bezier curve into smaller curves, each of which
@@ -231,7 +231,6 @@ def subdivideCubicPath( sp, flat, i=1 ):
 		while True:
 			if i >= len( sp ):
 				return
-
 			p0 = sp[i - 1][1]
 			p1 = sp[i - 1][2]
 			p2 = sp[i][0]
@@ -249,52 +248,36 @@ def subdivideCubicPath( sp, flat, i=1 ):
 		p = [one[2], one[3], two[1]]
 		sp[i:1] = [p]
 
-def checkLimits( value, lowerBound, upperBound ):
-	#Check machine size limit; truncate at edges
-	if (value > upperBound):
-		return upperBound, True
-	if (value < lowerBound):
-		return lowerBound, True	
-	return value, False	
-
-def checkLimits( value, lowerBound, upperBound, tolerance ):
-	# Check machine size limit; truncate at edges
-	# Allow a range of tolerance where we truncate motion without error
-
-	if (value > upperBound):
-		if (value > (upperBound + tolerance)):
-			return upperBound, True		# Truncate & throw error
-		else:
-			return upperBound, False	# Truncate with no error
-	if (value < lowerBound):
-		if (value < (lowerBound - tolerance)):
-			return lowerBound, True		# Truncate & throw error
-		else:
-			return lowerBound, False	# Truncate with no error
-	return value, False					# Return original value without error
-	
-def vFinal_Vi_A_Dx(Vinitial,Acceleration,DeltaX):
+def userUnitToUnits(distanceUU, unitString ):
 	'''
-	Kinematic calculation: Final velocity with constant linear acceleration. 
+	Custom replacement for the uutounit routine in inkex.py
 	
-	Calculate and return the (real) final velocity, given an initial velocity, 
-		acceleration rate, and distance interval.
+	Parse the attribute into a value and associated units. 
+	Return value in user units (typically "px").
+	'''
 
-	Uses the kinematic equation Vf^2 = 2 a D_x + Vi^2, where 
-			Vf is the final velocity, 
-			a is the acceleration rate, 
-			D_x (delta x) is the distance interval, and
-			Vi is the initial velocity.	
-			
-	We are looking at the positive root only-- if the argument of the sqrt
-		is less than zero, return -1, to indicate a failure.		
-	'''		
-	FinalVSquared = ( 2 * Acceleration * DeltaX ) +	( Vinitial * Vinitial )
-	if (FinalVSquared > 0):
-		return sqrt(FinalVSquared)	
+	if not distanceUU: # Couldn't parse the value
+		return None
+	elif ( unitString == '' ) or ( unitString == 'px' ):
+		return distanceUU
+	elif  unitString == 'in' :
+		return (float( distanceUU ) / (pxPerInch))		
+	elif unitString == 'mm':
+		return (float( distanceUU ) / (pxPerInch / 25.4))
+	elif unitString == 'cm':
+		return (float( distanceUU ) / (pxPerInch / 2.54))
+	elif unitString == 'Q':
+		return (float( distanceUU ) / (pxPerInch / (40.0 * 2.54)))
+	elif unitString == 'pc':
+		return (float( distanceUU ) / (pxPerInch / 6.0))
+	elif unitString == 'pt':
+		return (float( distanceUU ) / (pxPerInch / 72.0))
+	elif unitString == '%':
+		return (float( distanceUU ) * 100.0)
 	else:
-		return -1
-
+		# Unsupported units
+		return None
+		
 def vInitial_VF_A_Dx(VFinal,Acceleration,DeltaX):
 	'''
 	Kinematic calculation: Maximum allowed initial velocity to arrive at distance X
@@ -318,12 +301,25 @@ def vInitial_VF_A_Dx(VFinal,Acceleration,DeltaX):
 	else:
 		return -1
 
+def vFinal_Vi_A_Dx(Vinitial,Acceleration,DeltaX):
+	'''
+	Kinematic calculation: Final velocity with constant linear acceleration. 
+	
+	Calculate and return the (real) final velocity, given an initial velocity, 
+		acceleration rate, and distance interval.
 
-def dotProductXY( inputVectorFirst, inputVectorSecond):
-	temp = inputVectorFirst[0] * inputVectorSecond[0] + inputVectorFirst[1] * inputVectorSecond[1]
-	if (temp > 1):
-		return 1
-	elif (temp < -1):
-		return -1
+	Uses the kinematic equation Vf^2 = 2 a D_x + Vi^2, where 
+			Vf is the final velocity, 
+			a is the acceleration rate, 
+			D_x (delta x) is the distance interval, and
+			Vi is the initial velocity.	
+			
+	We are looking at the positive root only-- if the argument of the sqrt
+		is less than zero, return -1, to indicate a failure.		
+	'''		
+	FinalVSquared = ( 2 * Acceleration * DeltaX ) +	( Vinitial * Vinitial )
+	if (FinalVSquared > 0):
+		return sqrt(FinalVSquared)	
 	else:
-		return temp 
+		return -1
+
