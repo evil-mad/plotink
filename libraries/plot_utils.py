@@ -49,7 +49,7 @@ def checkLimits( value, lowerBound, upperBound ):
 		return lowerBound, True	
 	return value, False	
 
-def checkLimits( value, lowerBound, upperBound, tolerance ):
+def checkLimitsTol( value, lowerBound, upperBound, tolerance ):
 	# Check machine size limit; truncate at edges
 	# Allow a range of tolerance where we truncate motion without error
 
