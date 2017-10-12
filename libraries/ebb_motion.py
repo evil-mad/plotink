@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.9, Dated June 29, 2017.
+# Version 0.10, Dated June 29, 2017.
 #
 # The MIT License (MIT)
 # 
@@ -33,7 +33,7 @@ import ebb_serial
 import math
 
 def version():
-	return "0.9"	# Version number for this document
+	return "0.10"	# Version number for this document
 
 def doABMove( portName, deltaA, deltaB, duration ):
 	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
@@ -183,9 +183,9 @@ def QueryPenUp( portName ):
 	if (portName is not None):
 		PenStatus = ebb_serial.query( portName, 'QP\r' )
 		if PenStatus[0] == '0':
-			return True
-		else:
 			return False
+		else:
+			return True
 
 def QueryPRGButton( portName ):
 	if (portName is not None):
