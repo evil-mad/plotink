@@ -42,7 +42,7 @@ pxPerInch = 90.0	# 90 px per inch, as of Inkscape 0.91
 					# Expect a change to 96 as of Inkscape 0.92.
 
 def checkLimits( value, lowerBound, upperBound ):
-	#Check machine size limit; truncate at edges
+	#Check size limit; truncate at edges
 	if (value > upperBound):
 		return upperBound, True
 	if (value < lowerBound):
@@ -50,8 +50,8 @@ def checkLimits( value, lowerBound, upperBound ):
 	return value, False	
 
 def checkLimitsTol( value, lowerBound, upperBound, tolerance ):
-	# Check machine size limit; truncate at edges
-	# Allow a range of tolerance where we truncate motion without error
+	# Check size limit; truncate at edges
+	# Allow a range of tolerance where we truncate the value without error
 
 	if (value > upperBound):
 		if (value > (upperBound + tolerance)):
