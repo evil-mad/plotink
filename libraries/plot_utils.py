@@ -35,14 +35,15 @@ import cspsubdiv
 from bezmisc import *
 
 def version():
-	return "0.8"	# Version number for this document
+	return "0.9"	# Version number for this document
 
 pxPerInch = 90.0	# 90 px per inch, as of Inkscape 0.91
 					# Note that the SVG specification is for 96 px per inch; 
 					# Expect a change to 96 as of Inkscape 0.92.
 
 def checkLimits( value, lowerBound, upperBound ):
-	#Check size limit; truncate at edges
+	# Limit a value to within a range.
+	# Return constrained value with error boolean.
 	if (value > upperBound):
 		return upperBound, True
 	if (value < lowerBound):
@@ -50,8 +51,9 @@ def checkLimits( value, lowerBound, upperBound ):
 	return value, False	
 
 def checkLimitsTol( value, lowerBound, upperBound, tolerance ):
-	# Check size limit; truncate at edges
-	# Allow a range of tolerance where we truncate the value without error
+	# Limit a value to within a range.
+	# Return constrained value with error boolean.
+	# Allow a range of tolerance where we constrain the value without an error message.
 
 	if (value > upperBound):
 		if (value > (upperBound + tolerance)):
@@ -64,6 +66,10 @@ def checkLimitsTol( value, lowerBound, upperBound, tolerance ):
 		else:
 			return lowerBound, False	# Truncate with no error
 	return value, False					# Return original value without error
+
+def constrainLimits( value, lowerBound, upperBound ):
+	# Limit a value to within a range. 
+	return max( lowerBound, min(upperBound, value) ) 
 
 def distance( x, y ):
 	'''
