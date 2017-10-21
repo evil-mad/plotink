@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.10, Dated June 29, 2017.
+# Version 0.10, Dated October 12, 2017.
 #
 # The MIT License (MIT)
 # 
