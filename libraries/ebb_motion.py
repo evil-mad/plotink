@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.10, Dated October 12, 2017.
+# Version 0.11, Dated December 4, 2017.
 #
 # The MIT License (MIT)
 # 
@@ -33,7 +33,7 @@ import ebb_serial
 import math
 
 def version():
-	return "0.10"	# Version number for this document
+	return "0.11"	# Version number for this document
 
 def doABMove( portName, deltaA, deltaB, duration ):
 	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
@@ -246,3 +246,15 @@ def setPenUpRate( portName, PenUpRate ):
 		ebb_serial.command(portName,  'SC,11,' + str( PenUpRate ) + '\r' )	
 		# Set the rate of change of the servo when going up.
 		# http://evil-mad.github.io/EggBot/ebb.html#SC
+
+def setEBBLV( portName, EBBLV ):
+	# Set the EBB "Layer" Variable, an 8-bit number we can read and write.
+	# (Unrelated to our plot layers; name is an historical artifact.) 
+	if (portName is not None):
+		ebb_serial.command(portName,  'SL,' + str( EBBLV ) + '\r' )	
+
+def queryEBBLV( portName ):
+	# Query the EBB "Layer" Variable, an 8-bit number we can read and write.
+	# (Unrelated to our plot layers; name is an historical artifact.) 
+	if (portName is not None):
+		return (int(ebb_serial.query( portName, 'QL\r' )))

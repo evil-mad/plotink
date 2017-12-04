@@ -328,4 +328,3 @@ def vFinal_Vi_A_Dx(Vinitial,Acceleration,DeltaX):
 		return sqrt(FinalVSquared)	
 	else:
 		return -1
-
