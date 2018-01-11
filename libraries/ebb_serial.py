@@ -5,13 +5,13 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.8, Dated June 8, 2017.
+# Version 0.8, Dated January 10, 2018.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2017 Evil Mad Scientist Laboratories
+# Copyright (c) 2018 Windell H. Oskay, Evil Mad Scientist Laboratories
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
