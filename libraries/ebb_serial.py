@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.7, Dated June 8, 2017.
+# Version 0.8, Dated June 8, 2017.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -37,7 +37,7 @@ import gettext
 import inkex
 
 def version():
-	return "0.7"	# Version number for this document
+	return "0.8"	# Version number for this document
 
 def findPort():	
 	#Find a single EiBotBoard connected to a USB port.
@@ -50,6 +50,7 @@ def findPort():
 		comPortsList = list(comports())
 		EBBport = None
 		for port in comPortsList:
+			#inkex.errormsg(port[1])	#TODO REMOVE
 			if port[1].startswith("EiBotBoard"):
 				EBBport = port[0] 	#Success; EBB found by name match.
 				break	#stop searching-- we are done.
@@ -60,11 +61,38 @@ def findPort():
 					break	#stop searching-- we are done.				
 		return EBBport
 
+def listEBBports():	
+	#Find and return a list of all EiBotBoard units
+	# connected via USB port.
+	try:
+		from serial.tools.list_ports import comports
+	except ImportError:
+		comports = None
+	if comports:
+		comPortsList = list(comports())
+		EBBPortsList = []
+		for port in comPortsList:
+			portHasEBB = False
+			#inkex.errormsg(port[1])	#TODO REMOVE
+			if port[1].startswith("EiBotBoard"):
+				portHasEBB = True
+			elif port[2].startswith("USB VID:PID=04D8:FD92"):
+				portHasEBB = True
+			if portHasEBB:
+				EBBPortsList.append(port)
+		if EBBPortsList:
+			return EBBPortsList
+	return None
+
 def testPort( comPort ):
 	'''
-	Return a SerialPort object
-	for the first port with an EBB (EiBotBoard; EggBot controller board).
-	YOU are responsible for closing this serial port!
+	Open a given serial port, verify that it is an EiBotBoard,
+	and return a SerialPort object that we can reference later.
+	
+	This routine only opens the port;
+	it will need to be closed as well, for example with closePort( comPort ).
+	You, who open the port, are responsible for closing it as well.
+	
 	'''		
 	if comPort is not None:
 		try:
@@ -86,6 +114,8 @@ def testPort( comPort ):
 		return None
 
 def openPort():
+	# Find and open a port to a single attached EiBotBoard.
+	# The first port located will be used.
 	foundPort = findPort()
 	serialPort = testPort( foundPort )
 	if serialPort:
