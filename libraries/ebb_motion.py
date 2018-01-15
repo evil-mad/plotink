@@ -5,11 +5,11 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.11, Dated December 4, 2017.
+# Version 0.12, Dated January 13, 2018.
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2017 Evil Mad Scientist Laboratories
+# Copyright (c) 2018 Windell H. Oskay, Evil Mad Scientist Laboratories
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -31,9 +31,10 @@
 
 import ebb_serial
 import math
+from distutils.version import LooseVersion
 
 def version():
-	return "0.11"	# Version number for this document
+	return "0.12"	# Version number for this document
 
 def doABMove( portName, deltaA, deltaB, duration ):
 	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
@@ -258,3 +259,17 @@ def queryEBBLV( portName ):
 	# (Unrelated to our plot layers; name is an historical artifact.) 
 	if (portName is not None):
 		return (int(ebb_serial.query( portName, 'QL\r' )))
+		
+def queryVoltage( portName ):
+	# Query the EBB motor power supply input voltage.
+	if (portName is not None):
+		EBBversionString = ebb_serial.queryVersion(portName) # Full string, human readable
+		EBBversionString.split("Version ",1)[1]   # Stripped copy, for version # comparisons
+		if (EBBversionString is not "none"):
+			if (LooseVersion(EBBversionString) >= LooseVersion("2.2.3")):
+				rawString = (ebb_serial.query( portName, 'QC\r' ))
+				voltagevalue = int(rawString.split(",",1)[1]) # Pick second value only
+				# Typical reading is about 300, for 9 V input.
+				if (voltagevalue < 250):
+					return False
+	return True
