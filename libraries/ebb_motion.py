@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.12, Dated January 13, 2018.
+# Version 0.13, Dated January 30, 2018.
 #
 # The MIT License (MIT)
 # 
@@ -34,7 +34,7 @@ import math
 from distutils.version import LooseVersion
 
 def version():
-	return "0.12"	# Version number for this document
+	return "0.13"	# Version number for this document
 
 def doABMove( portName, deltaA, deltaB, duration ):
 	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
@@ -218,6 +218,28 @@ def sendPenDown( portName, PenDelay ):
 def sendPenUp( portName, PenDelay ):
 	if (portName is not None):
 		strOutput = ','.join( ['SP,1', str( PenDelay )] ) + '\r'
+		ebb_serial.command( portName, strOutput)
+
+def PBOutConfig( portName, Pin, State ):
+	# Enable an I/O pin. Pin: {0,1,2, or 3}. State: {0 or 1}.
+	# Note that B0 is used as an alternate pause button input.
+	# Note that B1 is used as the pen-lift servo motor output.
+	# Note that B3 is used as the EggBot engraver output.
+	# For use with a laser (or similar implement), pin 3 is recommended
+	
+	if (portName is not None):
+		# Set initial Bx pin value, high or low:
+		strOutput = 'PO,B,' + str(Pin) + ',' + str(State) + '\r'
+		ebb_serial.command( portName, strOutput)
+		# Configure I/O pin Bx as an output
+		strOutput = 'PD,B,' + str(Pin) + ',0\r'
+		ebb_serial.command( portName, strOutput)
+
+def PBOutValue( portName, Pin, State ):
+	# Set state of the I/O pin. Pin: {0,1,2, or 3}. State: {0 or 1}.
+	# Set the pin as an output with OutputPinBConfigure before using this.
+	if (portName is not None):
+		strOutput = 'PO,B,' + str(Pin) + ',' + str(State) + '\r'
 		ebb_serial.command( portName, strOutput)
 
 def TogglePen( portName ):
