@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.13, Dated January 30, 2018.
+# See version() below for version number.
 #
 # The MIT License (MIT)
 # 
@@ -33,8 +33,8 @@ import ebb_serial
 import math
 from distutils.version import LooseVersion
 
-def version():
-	return "0.13"	# Version number for this document
+def version():	# Report version number for this document
+	return "0.14"	# Dated February 21, 2018
 
 def doABMove( portName, deltaA, deltaB, duration ):
 	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
@@ -286,7 +286,8 @@ def queryVoltage( portName ):
 	# Query the EBB motor power supply input voltage.
 	if (portName is not None):
 		EBBversionString = ebb_serial.queryVersion(portName) # Full string, human readable
-		EBBversionString.split("Version ",1)[1]   # Stripped copy, for version # comparisons
+		EBBversionString = EBBversionString.split("Version ",1)[1]   # Stripped copy, for version # comparisons
+		EBBversionString = EBBversionString.strip()
 		if (EBBversionString is not "none"):
 			if (LooseVersion(EBBversionString) >= LooseVersion("2.2.3")):
 				rawString = (ebb_serial.query( portName, 'QC\r' ))
