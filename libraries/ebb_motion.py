@@ -32,9 +32,11 @@
 import ebb_serial
 import math
 from distutils.version import LooseVersion
+import inkex
+
 
 def version():	# Report version number for this document
-	return "0.14"	# Dated February 21, 2018
+	return "0.14"	# Dated March 5, 2018
 
 def doABMove( portName, deltaA, deltaB, duration ):
 	# Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
@@ -286,12 +288,27 @@ def queryVoltage( portName ):
 	# Query the EBB motor power supply input voltage.
 	if (portName is not None):
 		EBBversionString = ebb_serial.queryVersion(portName) # Full string, human readable
-		EBBversionString = EBBversionString.split("Version ",1)[1]   # Stripped copy, for version # comparisons
-		EBBversionString = EBBversionString.strip()
+
+
+		EBBversionString = EBBversionString.split("Firmware Version ",1)
+
+		splitLen = len( EBBversionString )
+		if splitLen > 1:
+			EBBversionString = EBBversionString[1]
+		else:
+			return True # We haven't received a reasonable version number response. 
+						# Ignore voltage test and return.
+		EBBversionString = EBBversionString.strip() # Stripped copy, for version # comparisons
 		if (EBBversionString is not "none"):
 			if (LooseVersion(EBBversionString) >= LooseVersion("2.2.3")):
 				rawString = (ebb_serial.query( portName, 'QC\r' ))
-				voltagevalue = int(rawString.split(",",1)[1]) # Pick second value only
+				splitString = rawString.split(",",1)
+				splitLen = len( splitString )
+				if splitLen > 1:
+					voltagevalue = int(splitString[1]) # Pick second value only
+				else:
+					return True # We haven't received a reasonable voltage string response.
+								# Ignore voltage test and return.	
 				# Typical reading is about 300, for 9 V input.
 				if (voltagevalue < 250):
 					return False

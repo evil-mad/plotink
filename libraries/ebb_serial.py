@@ -5,7 +5,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.8, Dated January 10, 2018.
+# Version 0.9, Dated March 5, 2018.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -35,6 +35,9 @@ import serial
 import gettext
 
 import inkex
+
+def __init__( self ):
+	ebbVersion = "none"
 
 def version():
 	return "0.8"	# Version number for this document
@@ -97,15 +100,20 @@ def testPort( comPort ):
 	if comPort is not None:
 		try:
 			serialPort = serial.Serial( comPort, timeout=1.0 ) # 1 second timeout!
+			
+			serialPort.flushInput()	# deprecated function name;
+									# use serialPort.reset_input_buffer() 
+									# if we can be sure that we have pySerial 3+.
+
 			serialPort.write( 'v\r'.encode('ascii') )
 			strVersion = serialPort.readline()			
 			if strVersion and strVersion.startswith( "EBB".encode('ascii') ):
 				return serialPort
-							
+
 			serialPort.write( 'v\r'.encode('ascii') ) 
 			strVersion = serialPort.readline()
 			if strVersion and strVersion.startswith( "EBB".encode('ascii') ):
-				return serialPort					
+				return serialPort
 			serialPort.close()
 		except serial.SerialException:
 			pass
