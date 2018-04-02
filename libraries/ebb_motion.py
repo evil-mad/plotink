@@ -148,7 +148,7 @@ def moveTimeLM( Ri, Steps, DeltaR):
 		root1 = int(math.floor((factor1 + factor2) / D))
 		root2 = int(math.floor((factor1 - factor2) / D))
 		
-	if ((root1 < 0) and (root1 < 0)):
+	if ((root1 < 0) and (root2 < 0)):
 		return -1			# No plausible roots -- movmement time must be greater than zero.
 	
 	if (root1 < 0):
