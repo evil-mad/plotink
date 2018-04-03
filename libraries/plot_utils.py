@@ -104,10 +104,10 @@ def getLength(altself, name, default):
     no units (''), units of pixels ('px'), and units of percentage ('%').
     Return value in px.
     """
-    str_ = altself.document.getroot().get(name)
+    stringToParse = altself.document.getroot().get(name)
 
-    if str_:
-        v, u = parseLengthWithUnits(str_)
+    if stringToParse:
+        v, u = parseLengthWithUnits(stringToParse)
         if not v:
             # Couldn't parse the value
             return None
@@ -142,9 +142,9 @@ def getLengthInches(altself, name):
     units of inches ('in'), millimeters ('mm'), or centimeters ('cm')
     Return value in inches.
     """
-    str_ = altself.document.getroot().get(name)
-    if str_:
-        v, u = parseLengthWithUnits(str_)
+    stringToParse = altself.document.getroot().get(name)
+    if stringToParse:
+        v, u = parseLengthWithUnits(stringToParse)
         if not v:
             # Couldn't parse the value
             return None
@@ -165,14 +165,14 @@ def getLengthInches(altself, name):
             return None
 
 
-def parseLengthWithUnits(str_):
+def parseLengthWithUnits(stringToParse):
     """
     Parse an SVG value which may or may not have units attached.
     There is a more general routine to consider in scour.py if more
     generality is ever needed.
     """
     u = 'px'
-    s = str_.strip()
+    s = stringToParse.strip()
     if s[-2:] == 'px':  # pixels, at a size of pxPerInch per inch
         s = s[:-2]
     elif s[-2:] == 'in':  # inches
