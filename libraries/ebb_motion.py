@@ -40,129 +40,129 @@ def version():  # Report version number for this document
     return "0.14"  # Dated March 5, 2018
 
 
-def doABMove(portName, deltaA, deltaB, duration):
+def doABMove(port_name, delta_a, delta_b, duration):
     # Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
     # Then, <Axis1> moves by <AxisA> + <AxisB>, and <Axis2> as <AxisA> - <AxisB>
-    if portName is not None:
-        strOutput = ','.join(['XM', str(duration), str(deltaA), str(deltaB)]) + '\r'
-        ebb_serial.command(portName, strOutput)
+    if port_name is not None:
+        str_output = ','.join(['XM', str(duration), str(delta_a), str(delta_b)]) + '\r'
+        ebb_serial.command(port_name, str_output)
 
 
-def doTimedPause(portName, nPause):
-    if portName is not None:
-        while nPause > 0:
-            if nPause > 750:
+def doTimedPause(port_name, n_pause):
+    if port_name is not None:
+        while n_pause > 0:
+            if n_pause > 750:
                 td = 750
             else:
-                td = nPause
+                td = n_pause
                 if td < 1:
                     td = 1  # don't allow zero-time moves
-            ebb_serial.command(portName, 'SM,' + str(td) + ',0,0\r')
-            nPause -= td
+            ebb_serial.command(port_name, 'SM,' + str(td) + ',0,0\r')
+            n_pause -= td
 
 
-def doXYAccelMove(portName, deltaX, deltaY, vInitial, vFinal):
+def doXYAccelMove(port_name, delta_x, delta_y, v_initial, v_final):
     # Move X/Y axes as: "AM,<initial_velocity>,<final_velocity>,<axis1>,<axis2><CR>"
     # Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
     # On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
     # Note that minimum move duration is 5 ms.
     # Important: Requires firmware version 2.4 or higher.
-    if portName is not None:
-        strOutput = ','.join(['AM', str(vInitial), str(vFinal), str(deltaX), str(deltaY)]) + '\r'
-        ebb_serial.command(portName, strOutput)
+    if port_name is not None:
+        str_output = ','.join(['AM', str(v_initial), str(v_final), str(delta_x), str(delta_y)]) + '\r'
+        ebb_serial.command(port_name, str_output)
 
 
-def doLowLevelMove(portName, Ri1, Steps1, DeltaR1, Ri2, Steps2, DeltaR2):
+def doLowLevelMove(port_name, ri1, steps1, delta_r1, ri2, steps2, delta_r2):
     # A "pre-computed" XY movement of the form
     #  "LM,RateTerm1,AxisSteps1,DeltaR1,RateTerm2,AxisSteps2,DeltaR2<CR>"
     # See http://evil-mad.github.io/EggBot/ebb.html#LM for documentation.
     # Important: Requires firmware version 2.5.1 or higher.
-    if portName is not None:
-        if (((Ri1 == 0) and (DeltaR1 == 0)) or (Steps1 == 0)) and (((Ri2 == 0) and (DeltaR2 == 0)) or (Steps2 == 0)):
+    if port_name is not None:
+        if (((ri1 == 0) and (delta_r1 == 0)) or (steps1 == 0)) and (((ri2 == 0) and (delta_r2 == 0)) or (steps2 == 0)):
             return
-        strOutput = ','.join(['LM', str(Ri1), str(Steps1), str(DeltaR1), str(Ri2), str(Steps2), str(DeltaR2)]) + '\r'
-        ebb_serial.command(portName, strOutput)
+        str_output = ','.join(['LM', str(ri1), str(steps1), str(delta_r1), str(ri2), str(steps2), str(delta_r2)]) + '\r'
+        ebb_serial.command(port_name, str_output)
 
 
-def doXYMove(portName, deltaX, deltaY, duration):
+def doXYMove(port_name, delta_x, delta_y, duration):
     # Move X/Y axes as: "SM,<move_duration>,<axis1>,<axis2><CR>"
     # Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
     # On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
-    if portName is not None:
-        strOutput = ','.join(['SM', str(duration), str(deltaY), str(deltaX)]) + '\r'
-        ebb_serial.command(portName, strOutput)
+    if port_name is not None:
+        str_output = ','.join(['SM', str(duration), str(delta_y), str(delta_x)]) + '\r'
+        ebb_serial.command(port_name, str_output)
 
 
-def moveDistLM(Rin, DeltaRin, timeTicks):
+def moveDistLM(rin, delta_rin, time_ticks):
     # Calculate the number of motor steps taken using the LM command,
-    # with rate factor R, delta factor DeltaR, and in a given number
-    # of 40 us timeTicks. Calculation is for one axis only.
+    # with rate factor r, delta factor delta_r, and in a given number
+    # of 40 us time_ticks. Calculation is for one axis only.
 
-    # Distance moved after n time ticks is given by (n * R + (n^2 - n)*DeltaR/2) / 2^31
+    # Distance moved after n time ticks is given by (n * r + (n^2 - n)*delta_r/2) / 2^31
 
-    n = int(timeTicks)  # Ensure that the inputs are integral.
-    R = int(Rin)
-    DeltaR = int(DeltaRin)
+    n = int(time_ticks)  # Ensure that the inputs are integral.
+    r = int(rin)
+    delta_r = int(delta_rin)
 
     if n == 0:
         return 0
     else:
         np = (n * n - n) >> 1  # (n^2 - n)/2 is always an integer.
-        S = (n * R) + DeltaR * np
-        S = S >> 31
-        return S
+        s = (n * r) + delta_r * np
+        s = s >> 31
+        return s
 
 
-def moveTimeLM(Ri, Steps, DeltaR):
+def moveTimeLM(ri, steps, delta_r):
     # Calculate how long, in 40 us ISR intervals, the LM command will take to move one axis.
 
     # First: Distance in steps moved after n time ticks is given by
-    #  the formula: distance(time n) = (10 * R + (n^2 - n)*DeltaR/2) / 2^31.
+    #  the formula: distance(time n) = (10 * r + (n^2 - n)*delta_r/2) / 2^31.
     # Use the quadratic formula to solve for possible values of n,
-    # the number of time ticks needed to travel the through distance of Steps.
+    # the number of time ticks needed to travel the through distance of steps.
     # As this is a floating point result, we will round down the output, and
     # then move one time step forward until we find the result.
 
-    R = float(Ri)
-    D = float(DeltaR)
-    Steps = abs(Steps)  # Distance to move is absolute value of Steps.
+    r = float(ri)
+    d = float(delta_r)
+    steps = abs(steps)  # Distance to move is absolute value of steps.
 
-    if Steps == 0:
+    if steps == 0:
         return 0  # No steps to take, so takes zero time.
 
-    if DeltaR == 0:
-        if Ri == 0:
-            return 0  # No move will be made if Ri and DeltaR are both zero.
+    if delta_r == 0:
+        if ri == 0:
+            return 0  # No move will be made if ri and delta_r are both zero.
 
         # Else, case of no acceleration.
         # Simple to get actual movement time:
         # T (seconds) = (AxisSteps << 31)/(25 kHz * RateTerm)
 
-        F = int(Steps) << 31
-        t = F / R
+        f = int(steps) << 31
+        t = f / r
         t2 = int(math.ceil(t))
         return t2
     else:
-        factor1 = (D / 2.0) - R
-        factor2 = R * R - D * R + (D * D / 4.0) + (2 * D * 2147483648.0 * Steps)
+        factor1 = (d / 2.0) - r
+        factor2 = r * r - d * r + (d * d / 4.0) + (2 * d * 2147483648.0 * steps)
 
         if factor2 < 0:
             factor2 = 0
         factor2 = math.sqrt(factor2)
-        root1 = int(math.floor((factor1 + factor2) / D))
-        root2 = int(math.floor((factor1 - factor2) / D))
+        root1 = int(math.floor((factor1 + factor2) / d))
+        root2 = int(math.floor((factor1 - factor2) / d))
 
     if (root1 < 0) and (root2 < 0):
         return -1  # No plausible roots -- movement time must be greater than zero.
 
     if root1 < 0:
-        timeTicks = root2  # Pick the positive root
+        time_ticks = root2  # Pick the positive root
     elif root2 < 0:
-        timeTicks = root1  # Pick the positive root
+        time_ticks = root1  # Pick the positive root
     elif root2 < root1:  # If both are valid, pick the smaller value.
-        timeTicks = root2
+        time_ticks = root2
     else:
-        timeTicks = root1
+        time_ticks = root1
 
     # Now that we have an floor estimate for the time:
     # calculate how many steps occur in the estimated time.
@@ -170,165 +170,165 @@ def moveTimeLM(Ri, Steps, DeltaR):
     # exact number of time ticks needed.
 
     dist = 0
-    continueLoop = True
-    while continueLoop:
-        timeTicks += 1
+    continue_loop = True
+    while continue_loop:
+        time_ticks += 1
 
-        dist = moveDistLM(Ri, DeltaR, timeTicks)
+        dist = moveDistLM(ri, delta_r, time_ticks)
 
-        if (dist > 0) and (dist < Steps):
+        if (dist > 0) and (dist < steps):
             pass
         else:
-            continueLoop = False
+            continue_loop = False
 
     if dist == 0:
-        timeTicks = 0
+        time_ticks = 0
 
-    return timeTicks
+    return time_ticks
 
 
-def QueryPenUp(portName):
-    if portName is not None:
-        PenStatus = ebb_serial.query(portName, 'QP\r')
-        if PenStatus[0] == '0':
+def QueryPenUp(port_name):
+    if port_name is not None:
+        pen_status = ebb_serial.query(port_name, 'QP\r')
+        if pen_status[0] == '0':
             return False
         else:
             return True
 
 
-def QueryPRGButton(portName):
-    if portName is not None:
-        return ebb_serial.query(portName, 'QB\r')
+def QueryPRGButton(port_name):
+    if port_name is not None:
+        return ebb_serial.query(port_name, 'QB\r')
 
 
-def sendDisableMotors(portName):
-    if portName is not None:
-        ebb_serial.command(portName, 'EM,0,0\r')
+def sendDisableMotors(port_name):
+    if port_name is not None:
+        ebb_serial.command(port_name, 'EM,0,0\r')
 
 
-def sendEnableMotors(portName, Res):
-    if Res < 0:
-        Res = 0
-    if Res > 5:
-        Res = 5
-    if portName is not None:
-        ebb_serial.command(portName, 'EM,' + str(Res) + ',' + str(Res) + '\r')
-        # If Res == 0, -> Motor disabled
-        # If Res == 1, -> 16X microstepping
-        # If Res == 2, -> 8X microstepping
-        # If Res == 3, -> 4X microstepping
-        # If Res == 4, -> 2X microstepping
-        # If Res == 5, -> No microstepping
+def sendEnableMotors(port_name, res):
+    if res < 0:
+        res = 0
+    if res > 5:
+        res = 5
+    if port_name is not None:
+        ebb_serial.command(port_name, 'EM,' + str(res) + ',' + str(res) + '\r')
+        # If res == 0, -> Motor disabled
+        # If res == 1, -> 16X microstepping
+        # If res == 2, -> 8X microstepping
+        # If res == 3, -> 4X microstepping
+        # If res == 4, -> 2X microstepping
+        # If res == 5, -> No microstepping
 
 
-def sendPenDown(portName, PenDelay):
-    if portName is not None:
-        strOutput = ','.join(['SP,0', str(PenDelay)]) + '\r'
-        ebb_serial.command(portName, strOutput)
+def sendPenDown(port_name, pen_delay):
+    if port_name is not None:
+        str_output = ','.join(['SP,0', str(pen_delay)]) + '\r'
+        ebb_serial.command(port_name, str_output)
 
 
-def sendPenUp(portName, PenDelay):
-    if portName is not None:
-        strOutput = ','.join(['SP,1', str(PenDelay)]) + '\r'
-        ebb_serial.command(portName, strOutput)
+def sendPenUp(port_name, pen_delay):
+    if port_name is not None:
+        str_output = ','.join(['SP,1', str(pen_delay)]) + '\r'
+        ebb_serial.command(port_name, str_output)
 
 
-def PBOutConfig(portName, Pin, State):
+def PBOutConfig(port_name, pin, state):
     # Enable an I/O pin. Pin: {0,1,2, or 3}. State: {0 or 1}.
     # Note that B0 is used as an alternate pause button input.
     # Note that B1 is used as the pen-lift servo motor output.
     # Note that B3 is used as the EggBot engraver output.
     # For use with a laser (or similar implement), pin 3 is recommended
 
-    if portName is not None:
+    if port_name is not None:
         # Set initial Bx pin value, high or low:
-        strOutput = 'PO,B,' + str(Pin) + ',' + str(State) + '\r'
-        ebb_serial.command(portName, strOutput)
+        str_output = 'PO,B,' + str(pin) + ',' + str(state) + '\r'
+        ebb_serial.command(port_name, str_output)
         # Configure I/O pin Bx as an output
-        strOutput = 'PD,B,' + str(Pin) + ',0\r'
-        ebb_serial.command(portName, strOutput)
+        str_output = 'PD,B,' + str(pin) + ',0\r'
+        ebb_serial.command(port_name, str_output)
 
 
-def PBOutValue(portName, Pin, State):
+def PBOutValue(port_name, pin, state):
     # Set state of the I/O pin. Pin: {0,1,2, or 3}. State: {0 or 1}.
     # Set the pin as an output with OutputPinBConfigure before using this.
-    if portName is not None:
-        strOutput = 'PO,B,' + str(Pin) + ',' + str(State) + '\r'
-        ebb_serial.command(portName, strOutput)
+    if port_name is not None:
+        str_output = 'PO,B,' + str(pin) + ',' + str(state) + '\r'
+        ebb_serial.command(port_name, str_output)
 
 
-def TogglePen(portName):
-    if portName is not None:
-        ebb_serial.command(portName, 'TP\r')
+def TogglePen(port_name):
+    if port_name is not None:
+        ebb_serial.command(port_name, 'TP\r')
 
 
-def setPenDownPos(portName, ServoMax):
-    if portName is not None:
-        ebb_serial.command(portName, 'SC,5,' + str(ServoMax) + '\r')
+def setPenDownPos(port_name, servo_max):
+    if port_name is not None:
+        ebb_serial.command(port_name, 'SC,5,' + str(servo_max) + '\r')
         # servo_max may be in the range 1 to 65535, in units of 83 ns intervals. This sets the "Pen Down" position.
         # http://evil-mad.github.io/EggBot/ebb.html#SC
 
 
-def setPenDownRate(portName, PenDownRate):
-    if portName is not None:
-        ebb_serial.command(portName, 'SC,12,' + str(PenDownRate) + '\r')
+def setPenDownRate(port_name, pen_down_rate):
+    if port_name is not None:
+        ebb_serial.command(port_name, 'SC,12,' + str(pen_down_rate) + '\r')
         # Set the rate of change of the servo when going down.
         # http://evil-mad.github.io/EggBot/ebb.html#SC
 
 
-def setPenUpPos(portName, ServoMin):
-    if portName is not None:
-        ebb_serial.command(portName, 'SC,4,' + str(ServoMin) + '\r')
+def setPenUpPos(port_name, servo_min):
+    if port_name is not None:
+        ebb_serial.command(port_name, 'SC,4,' + str(servo_min) + '\r')
         # servo_min may be in the range 1 to 65535, in units of 83 ns intervals. This sets the "Pen Up" position.
         # http://evil-mad.github.io/EggBot/ebb.html#SC
 
 
-def setPenUpRate(portName, PenUpRate):
-    if portName is not None:
-        ebb_serial.command(portName, 'SC,11,' + str(PenUpRate) + '\r')
+def setPenUpRate(port_name, pen_up_rate):
+    if port_name is not None:
+        ebb_serial.command(port_name, 'SC,11,' + str(pen_up_rate) + '\r')
         # Set the rate of change of the servo when going up.
         # http://evil-mad.github.io/EggBot/ebb.html#SC
 
 
-def setEBBLV(portName, EBBLV):
+def setEBBLV(port_name, ebb_lv):
     # Set the EBB "Layer" Variable, an 8-bit number we can read and write.
     # (Unrelated to our plot layers; name is an historical artifact.)
-    if portName is not None:
-        ebb_serial.command(portName, 'SL,' + str(EBBLV) + '\r')
+    if port_name is not None:
+        ebb_serial.command(port_name, 'SL,' + str(ebb_lv) + '\r')
 
 
-def queryEBBLV(portName):
+def queryEBBLV(port_name):
     # Query the EBB "Layer" Variable, an 8-bit number we can read and write.
     # (Unrelated to our plot layers; name is an historical artifact.)
-    if portName is not None:
-        return int(ebb_serial.query(portName, 'QL\r'))
+    if port_name is not None:
+        return int(ebb_serial.query(port_name, 'QL\r'))
 
 
-def queryVoltage(portName):
+def queryVoltage(port_name):
     # Query the EBB motor power supply input voltage.
-    if portName is not None:
-        EBBversionString = ebb_serial.queryVersion(portName)  # Full string, human readable
+    if port_name is not None:
+        ebb_version_string = ebb_serial.queryVersion(port_name)  # Full string, human readable
 
-        EBBversionString = EBBversionString.split("Firmware Version ", 1)
+        ebb_version_string = ebb_version_string.split("Firmware Version ", 1)
 
-        splitLen = len(EBBversionString)
-        if splitLen > 1:
-            EBBversionString = EBBversionString[1]
+        split_len = len(ebb_version_string)
+        if split_len > 1:
+            ebb_version_string = ebb_version_string[1]
         else:
             return True  # We haven't received a reasonable version number response.
             # Ignore voltage test and return.
-        EBBversionString = EBBversionString.strip()  # Stripped copy, for version # comparisons
-        if EBBversionString is not "none":
-            if LooseVersion(EBBversionString) >= LooseVersion("2.2.3"):
-                rawString = (ebb_serial.query(portName, 'QC\r'))
-                splitString = rawString.split(",", 1)
-                splitLen = len(splitString)
-                if splitLen > 1:
-                    voltagevalue = int(splitString[1])  # Pick second value only
+        ebb_version_string = ebb_version_string.strip()  # Stripped copy, for version # comparisons
+        if ebb_version_string is not "none":
+            if LooseVersion(ebb_version_string) >= LooseVersion("2.2.3"):
+                raw_string = (ebb_serial.query(port_name, 'QC\r'))
+                split_string = raw_string.split(",", 1)
+                split_len = len(split_string)
+                if split_len > 1:
+                    voltage_value = int(split_string[1])  # Pick second value only
                 else:
                     return True  # We haven't received a reasonable voltage string response.
                     # Ignore voltage test and return.
                 # Typical reading is about 300, for 9 V input.
-                if voltagevalue < 250:
+                if voltage_value < 250:
                     return False
     return True
