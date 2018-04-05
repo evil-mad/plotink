@@ -31,9 +31,9 @@
 # SOFTWARE.
 
 import math
+from distutils.version import LooseVersion
 
 import ebb_serial
-from distutils.version import LooseVersion
 
 
 def version():  # Report version number for this document
@@ -44,7 +44,7 @@ def doABMove(port_name, delta_a, delta_b, duration):
     # Issue command to move A/B axes as: "XM,<move_duration>,<axisA>,<axisB><CR>"
     # Then, <Axis1> moves by <AxisA> + <AxisB>, and <Axis2> as <AxisA> - <AxisB>
     if port_name is not None:
-        str_output = ','.join(['XM', str(duration), str(delta_a), str(delta_b)]) + '\r'
+        str_output = 'XM,{0},{1},{2}\r'.format(duration, delta_a, delta_b)
         ebb_serial.command(port_name, str_output)
 
 
@@ -57,7 +57,7 @@ def doTimedPause(port_name, n_pause):
                 td = n_pause
                 if td < 1:
                     td = 1  # don't allow zero-time moves
-            ebb_serial.command(port_name, 'SM,' + str(td) + ',0,0\r')
+            ebb_serial.command(port_name, 'SM,{0},0,0\r'.format(td))
             n_pause -= td
 
 
@@ -68,7 +68,7 @@ def doXYAccelMove(port_name, delta_x, delta_y, v_initial, v_final):
     # Note that minimum move duration is 5 ms.
     # Important: Requires firmware version 2.4 or higher.
     if port_name is not None:
-        str_output = ','.join(['AM', str(v_initial), str(v_final), str(delta_x), str(delta_y)]) + '\r'
+        str_output = 'AM,{0},{1},{2},{3}\r'.format(v_initial, v_final, delta_x, delta_y)
         ebb_serial.command(port_name, str_output)
 
 
@@ -78,9 +78,9 @@ def doLowLevelMove(port_name, ri1, steps1, delta_r1, ri2, steps2, delta_r2):
     # See http://evil-mad.github.io/EggBot/ebb.html#LM for documentation.
     # Important: Requires firmware version 2.5.1 or higher.
     if port_name is not None:
-        if (((ri1 == 0) and (delta_r1 == 0)) or (steps1 == 0)) and (((ri2 == 0) and (delta_r2 == 0)) or (steps2 == 0)):
+        if ((ri1 == 0 and delta_r1 == 0) or steps1 == 0) and ((ri2 == 0 and delta_r2 == 0) or steps2 == 0):
             return
-        str_output = ','.join(['LM', str(ri1), str(steps1), str(delta_r1), str(ri2), str(steps2), str(delta_r2)]) + '\r'
+        str_output = 'LM,{0},{1},{2},{3},{4},{5}\r'.format(ri1, steps1, delta_r1, ri2, steps2, delta_r2)
         ebb_serial.command(port_name, str_output)
 
 
@@ -89,7 +89,7 @@ def doXYMove(port_name, delta_x, delta_y, duration):
     # Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
     # On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
     if port_name is not None:
-        str_output = ','.join(['SM', str(duration), str(delta_y), str(delta_x)]) + '\r'
+        str_output = 'SM,{0},{1},{2}\r'.format(duration,delta_y,delta_x)
         ebb_serial.command(port_name, str_output)
 
 
@@ -152,7 +152,7 @@ def moveTimeLM(ri, steps, delta_r):
         root1 = int(math.floor((factor1 + factor2) / d))
         root2 = int(math.floor((factor1 - factor2) / d))
 
-    if (root1 < 0) and (root2 < 0):
+    if root1 < 0 and root2 < 0:
         return -1  # No plausible roots -- movement time must be greater than zero.
 
     if root1 < 0:
@@ -176,7 +176,7 @@ def moveTimeLM(ri, steps, delta_r):
 
         dist = moveDistLM(ri, delta_r, time_ticks)
 
-        if (dist > 0) and (dist < steps):
+        if 0 < dist < steps:
             pass
         else:
             continue_loop = False
@@ -212,7 +212,7 @@ def sendEnableMotors(port_name, res):
     if res > 5:
         res = 5
     if port_name is not None:
-        ebb_serial.command(port_name, 'EM,' + str(res) + ',' + str(res) + '\r')
+        ebb_serial.command(port_name, 'EM,{0},{0}\r'.format(res))
         # If res == 0, -> Motor disabled
         # If res == 1, -> 16X microstepping
         # If res == 2, -> 8X microstepping
@@ -223,13 +223,13 @@ def sendEnableMotors(port_name, res):
 
 def sendPenDown(port_name, pen_delay):
     if port_name is not None:
-        str_output = ','.join(['SP,0', str(pen_delay)]) + '\r'
+        str_output = 'SP,0,{0}\r'.format(pen_delay)
         ebb_serial.command(port_name, str_output)
 
 
 def sendPenUp(port_name, pen_delay):
     if port_name is not None:
-        str_output = ','.join(['SP,1', str(pen_delay)]) + '\r'
+        str_output = 'SP,1,{0}\r'.format(pen_delay)
         ebb_serial.command(port_name, str_output)
 
 
@@ -242,10 +242,10 @@ def PBOutConfig(port_name, pin, state):
 
     if port_name is not None:
         # Set initial Bx pin value, high or low:
-        str_output = 'PO,B,' + str(pin) + ',' + str(state) + '\r'
+        str_output = 'PO,B,{0},{1}\r'.format(pin, state)
         ebb_serial.command(port_name, str_output)
         # Configure I/O pin Bx as an output
-        str_output = 'PD,B,' + str(pin) + ',0\r'
+        str_output = 'PD,B,{0},0\r'.format(pin)
         ebb_serial.command(port_name, str_output)
 
 
@@ -253,7 +253,7 @@ def PBOutValue(port_name, pin, state):
     # Set state of the I/O pin. Pin: {0,1,2, or 3}. State: {0 or 1}.
     # Set the pin as an output with OutputPinBConfigure before using this.
     if port_name is not None:
-        str_output = 'PO,B,' + str(pin) + ',' + str(state) + '\r'
+        str_output = 'PO,B,{0},{1}\r'.format(pin, state)
         ebb_serial.command(port_name, str_output)
 
 
@@ -264,28 +264,28 @@ def TogglePen(port_name):
 
 def setPenDownPos(port_name, servo_max):
     if port_name is not None:
-        ebb_serial.command(port_name, 'SC,5,' + str(servo_max) + '\r')
+        ebb_serial.command(port_name, 'SC,5,{0}\r'.format(servo_max))
         # servo_max may be in the range 1 to 65535, in units of 83 ns intervals. This sets the "Pen Down" position.
         # http://evil-mad.github.io/EggBot/ebb.html#SC
 
 
 def setPenDownRate(port_name, pen_down_rate):
     if port_name is not None:
-        ebb_serial.command(port_name, 'SC,12,' + str(pen_down_rate) + '\r')
+        ebb_serial.command(port_name, 'SC,12,{0}\r'.format(pen_down_rate))
         # Set the rate of change of the servo when going down.
         # http://evil-mad.github.io/EggBot/ebb.html#SC
 
 
 def setPenUpPos(port_name, servo_min):
     if port_name is not None:
-        ebb_serial.command(port_name, 'SC,4,' + str(servo_min) + '\r')
+        ebb_serial.command(port_name, 'SC,4,{0}\r'.format(servo_min))
         # servo_min may be in the range 1 to 65535, in units of 83 ns intervals. This sets the "Pen Up" position.
         # http://evil-mad.github.io/EggBot/ebb.html#SC
 
 
 def setPenUpRate(port_name, pen_up_rate):
     if port_name is not None:
-        ebb_serial.command(port_name, 'SC,11,' + str(pen_up_rate) + '\r')
+        ebb_serial.command(port_name, 'SC,11,{0}\r'.format(pen_up_rate))
         # Set the rate of change of the servo when going up.
         # http://evil-mad.github.io/EggBot/ebb.html#SC
 
@@ -294,7 +294,7 @@ def setEBBLV(port_name, ebb_lv):
     # Set the EBB "Layer" Variable, an 8-bit number we can read and write.
     # (Unrelated to our plot layers; name is an historical artifact.)
     if port_name is not None:
-        ebb_serial.command(port_name, 'SL,' + str(ebb_lv) + '\r')
+        ebb_serial.command(port_name, 'SL,{0}\r'.format(ebb_lv))
 
 
 def queryEBBLV(port_name):
@@ -311,12 +311,12 @@ def queryVoltage(port_name):
 
         ebb_version_string = ebb_version_string.split("Firmware Version ", 1)
 
-        split_len = len(ebb_version_string)
-        if split_len > 1:
+        if len(ebb_version_string) > 1:
             ebb_version_string = ebb_version_string[1]
         else:
             return True  # We haven't received a reasonable version number response.
-            # Ignore voltage test and return.
+
+        # Ignore voltage test and return.
         ebb_version_string = ebb_version_string.strip()  # Stripped copy, for version # comparisons
         if ebb_version_string is not "none":
             if LooseVersion(ebb_version_string) >= LooseVersion("2.2.3"):

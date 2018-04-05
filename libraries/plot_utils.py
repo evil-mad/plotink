@@ -41,7 +41,7 @@ def version():
     return "0.9"  # Version number for this document
 
 
-pxPerInch = 90.0  # 90 px per inch, as of Inkscape 0.91
+PX_PER_INCH = 90.0  # 90 px per inch, as of Inkscape 0.91
 
 
 # Note that the SVG specification is for 96 px per inch;
@@ -111,20 +111,20 @@ def getLength(altself, name, default):
         if not v:
             # Couldn't parse the value
             return None
-        elif (u == '') or (u == 'px'):
+        elif u == '' or u == 'px':
             return v
         elif u == 'in':
-            return float(v) * pxPerInch
+            return float(v) * PX_PER_INCH
         elif u == 'mm':
-            return float(v) * pxPerInch / 25.4
+            return float(v) * PX_PER_INCH / 25.4
         elif u == 'cm':
-            return float(v) * pxPerInch / 2.54
+            return float(v) * PX_PER_INCH / 2.54
         elif u == 'Q':
-            return float(v) * pxPerInch / (40.0 * 2.54)
+            return float(v) * PX_PER_INCH / (40.0 * 2.54)
         elif u == 'pc':
-            return float(v) * pxPerInch / 6.0
+            return float(v) * PX_PER_INCH / 6.0
         elif u == 'pt':
-            return float(v) * pxPerInch / 72.0
+            return float(v) * PX_PER_INCH / 72.0
         elif u == '%':
             return float(default) * v / 100.0
         else:
@@ -173,7 +173,7 @@ def parseLengthWithUnits(string_to_parse):
     """
     u = 'px'
     s = string_to_parse.strip()
-    if s[-2:] == 'px':  # pixels, at a size of pxPerInch per inch
+    if s[-2:] == 'px':  # pixels, at a size of PX_PER_INCH per inch
         s = s[:-2]
     elif s[-2:] == 'in':  # inches
         s = s[:-2]
@@ -190,7 +190,7 @@ def parseLengthWithUnits(string_to_parse):
     elif s[-2:] == 'pc':  # picas!	1pc = 1/6th of 1in
         s = s[:-2]
         u = 'pc'
-    elif (s[-1:] == 'Q') or (s[-1:] == 'q'):  # quarter-millimeters. 1q = 1/40th of 1cm
+    elif s[-1:] == 'Q' or s[-1:] == 'q':  # quarter-millimeters. 1q = 1/40th of 1cm
         s = s[:-1]
         u = 'Q'
     elif s[-1:] == '%':
@@ -217,20 +217,20 @@ def unitsToUserUnits(input_string):
     if not v:
         # Couldn't parse the value
         return None
-    elif (u == '') or (u == 'px'):
+    elif u == '' or u == 'px':
         return v
     elif u == 'in':
-        return float(v) * pxPerInch
+        return float(v) * PX_PER_INCH
     elif u == 'mm':
-        return float(v) * pxPerInch / 25.4
+        return float(v) * PX_PER_INCH / 25.4
     elif u == 'cm':
-        return float(v) * pxPerInch / 2.54
+        return float(v) * PX_PER_INCH / 2.54
     elif u == 'Q':
-        return float(v) * pxPerInch / (40.0 * 2.54)
+        return float(v) * PX_PER_INCH / (40.0 * 2.54)
     elif u == 'pc':
-        return float(v) * pxPerInch / 6.0
+        return float(v) * PX_PER_INCH / 6.0
     elif u == 'pt':
-        return float(v) * pxPerInch / 72.0
+        return float(v) * PX_PER_INCH / 72.0
     elif u == '%':
         return float(v) / 100.0
     else:
@@ -280,20 +280,20 @@ def userUnitToUnits(distance_uu, unit_string):
 
     if not distance_uu:  # Couldn't parse the value
         return None
-    elif (unit_string == '') or (unit_string == 'px'):
+    elif unit_string == '' or unit_string == 'px':
         return distance_uu
     elif unit_string == 'in':
-        return float(distance_uu) / pxPerInch
+        return float(distance_uu) / PX_PER_INCH
     elif unit_string == 'mm':
-        return float(distance_uu) / (pxPerInch / 25.4)
+        return float(distance_uu) / (PX_PER_INCH / 25.4)
     elif unit_string == 'cm':
-        return float(distance_uu) / (pxPerInch / 2.54)
+        return float(distance_uu) / (PX_PER_INCH / 2.54)
     elif unit_string == 'Q':
-        return float(distance_uu) / (pxPerInch / (40.0 * 2.54))
+        return float(distance_uu) / (PX_PER_INCH / (40.0 * 2.54))
     elif unit_string == 'pc':
-        return float(distance_uu) / (pxPerInch / 6.0)
+        return float(distance_uu) / (PX_PER_INCH / 6.0)
     elif unit_string == 'pt':
-        return float(distance_uu) / (pxPerInch / 72.0)
+        return float(distance_uu) / (PX_PER_INCH / 72.0)
     elif unit_string == '%':
         return float(distance_uu) * 100.0
     else:
