@@ -47,37 +47,37 @@ pxPerInch = 90.0  # 90 px per inch, as of Inkscape 0.91
 # Note that the SVG specification is for 96 px per inch;
 # Expect a change to 96 as of Inkscape 0.92.
 
-def checkLimits(value, lowerBound, upperBound):
+def checkLimits(value, lower_bound, upper_bound):
     # Limit a value to within a range.
     # Return constrained value with error boolean.
-    if value > upperBound:
-        return upperBound, True
-    if value < lowerBound:
-        return lowerBound, True
+    if value > upper_bound:
+        return upper_bound, True
+    if value < lower_bound:
+        return lower_bound, True
     return value, False
 
 
-def checkLimitsTol(value, lowerBound, upperBound, tolerance):
+def checkLimitsTol(value, lower_bound, upper_bound, tolerance):
     # Limit a value to within a range.
     # Return constrained value with error boolean.
     # Allow a range of tolerance where we constrain the value without an error message.
 
-    if value > upperBound:
-        if value > (upperBound + tolerance):
-            return upperBound, True  # Truncate & throw error
+    if value > upper_bound:
+        if value > (upper_bound + tolerance):
+            return upper_bound, True  # Truncate & throw error
         else:
-            return upperBound, False  # Truncate with no error
-    if value < lowerBound:
-        if value < (lowerBound - tolerance):
-            return lowerBound, True  # Truncate & throw error
+            return upper_bound, False  # Truncate with no error
+    if value < lower_bound:
+        if value < (lower_bound - tolerance):
+            return lower_bound, True  # Truncate & throw error
         else:
-            return lowerBound, False  # Truncate with no error
+            return lower_bound, False  # Truncate with no error
     return value, False  # Return original value without error
 
 
-def constrainLimits(value, lowerBound, upperBound):
+def constrainLimits(value, lower_bound, upper_bound):
     # Limit a value to within a range.
-    return max(lowerBound, min(upperBound, value))
+    return max(lower_bound, min(upper_bound, value))
 
 
 def distance(x, y):
@@ -87,8 +87,8 @@ def distance(x, y):
     return sqrt(x * x + y * y)
 
 
-def dotProductXY(inputVectorFirst, inputVectorSecond):
-    temp = inputVectorFirst[0] * inputVectorSecond[0] + inputVectorFirst[1] * inputVectorSecond[1]
+def dotProductXY(input_vector_first, input_vector_second):
+    temp = input_vector_first[0] * input_vector_second[0] + input_vector_first[1] * input_vector_second[1]
     if temp > 1:
         return 1
     elif temp < -1:
@@ -104,10 +104,10 @@ def getLength(altself, name, default):
     no units (''), units of pixels ('px'), and units of percentage ('%').
     Return value in px.
     """
-    stringToParse = altself.document.getroot().get(name)
+    string_to_parse = altself.document.getroot().get(name)
 
-    if stringToParse:
-        v, u = parseLengthWithUnits(stringToParse)
+    if string_to_parse:
+        v, u = parseLengthWithUnits(string_to_parse)
         if not v:
             # Couldn't parse the value
             return None
@@ -142,9 +142,9 @@ def getLengthInches(altself, name):
     units of inches ('in'), millimeters ('mm'), or centimeters ('cm')
     Return value in inches.
     """
-    stringToParse = altself.document.getroot().get(name)
-    if stringToParse:
-        v, u = parseLengthWithUnits(stringToParse)
+    string_to_parse = altself.document.getroot().get(name)
+    if string_to_parse:
+        v, u = parseLengthWithUnits(string_to_parse)
         if not v:
             # Couldn't parse the value
             return None
@@ -165,14 +165,14 @@ def getLengthInches(altself, name):
             return None
 
 
-def parseLengthWithUnits(stringToParse):
+def parseLengthWithUnits(string_to_parse):
     """
     Parse an SVG value which may or may not have units attached.
     There is a more general routine to consider in scour.py if more
     generality is ever needed.
     """
     u = 'px'
-    s = stringToParse.strip()
+    s = string_to_parse.strip()
     if s[-2:] == 'px':  # pixels, at a size of pxPerInch per inch
         s = s[:-2]
     elif s[-2:] == 'in':  # inches
@@ -205,7 +205,7 @@ def parseLengthWithUnits(stringToParse):
     return v, u
 
 
-def unitsToUserUnits(inputString):
+def unitsToUserUnits(input_string):
     """
     Custom replacement for the unittouu routine in inkex.py
 
@@ -213,7 +213,7 @@ def unitsToUserUnits(inputString):
     Return value in user units (typically "px").
     """
 
-    v, u = parseLengthWithUnits(inputString)
+    v, u = parseLengthWithUnits(input_string)
     if not v:
         # Couldn't parse the value
         return None
@@ -270,7 +270,7 @@ def subdivideCubicPath(sp, flat, i=1):
         sp[i:1] = [p]
 
 
-def userUnitToUnits(distanceUU, unitString):
+def userUnitToUnits(distance_uu, unit_string):
     """
     Custom replacement for the uutounit routine in inkex.py
 
@@ -278,30 +278,30 @@ def userUnitToUnits(distanceUU, unitString):
     Return value in user units (typically "px").
     """
 
-    if not distanceUU:  # Couldn't parse the value
+    if not distance_uu:  # Couldn't parse the value
         return None
-    elif (unitString == '') or (unitString == 'px'):
-        return distanceUU
-    elif unitString == 'in':
-        return float(distanceUU) / pxPerInch
-    elif unitString == 'mm':
-        return float(distanceUU) / (pxPerInch / 25.4)
-    elif unitString == 'cm':
-        return float(distanceUU) / (pxPerInch / 2.54)
-    elif unitString == 'Q':
-        return float(distanceUU) / (pxPerInch / (40.0 * 2.54))
-    elif unitString == 'pc':
-        return float(distanceUU) / (pxPerInch / 6.0)
-    elif unitString == 'pt':
-        return float(distanceUU) / (pxPerInch / 72.0)
-    elif unitString == '%':
-        return float(distanceUU) * 100.0
+    elif (unit_string == '') or (unit_string == 'px'):
+        return distance_uu
+    elif unit_string == 'in':
+        return float(distance_uu) / pxPerInch
+    elif unit_string == 'mm':
+        return float(distance_uu) / (pxPerInch / 25.4)
+    elif unit_string == 'cm':
+        return float(distance_uu) / (pxPerInch / 2.54)
+    elif unit_string == 'Q':
+        return float(distance_uu) / (pxPerInch / (40.0 * 2.54))
+    elif unit_string == 'pc':
+        return float(distance_uu) / (pxPerInch / 6.0)
+    elif unit_string == 'pt':
+        return float(distance_uu) / (pxPerInch / 72.0)
+    elif unit_string == '%':
+        return float(distance_uu) * 100.0
     else:
         # Unsupported units
         return None
 
 
-def vInitial_VF_A_Dx(VFinal, Acceleration, DeltaX):
+def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
     """
     Kinematic calculation: Maximum allowed initial velocity to arrive at distance X
     with specified final velocity, and given maximum linear acceleration.
@@ -318,14 +318,14 @@ def vInitial_VF_A_Dx(VFinal, Acceleration, DeltaX):
     We are looking at the positive root only-- if the argument of the sqrt
         is less than zero, return -1, to indicate a failure.
     """
-    IntialVSquared = (VFinal * VFinal) - (2 * Acceleration * DeltaX)
-    if IntialVSquared > 0:
-        return sqrt(IntialVSquared)
+    initial_v_squared = (v_final * v_final) - (2 * acceleration * delta_x)
+    if initial_v_squared > 0:
+        return sqrt(initial_v_squared)
     else:
         return -1
 
 
-def vFinal_Vi_A_Dx(Vinitial, Acceleration, DeltaX):
+def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
     """
     Kinematic calculation: Final velocity with constant linear acceleration.
 
@@ -341,8 +341,8 @@ def vFinal_Vi_A_Dx(Vinitial, Acceleration, DeltaX):
     We are looking at the positive root only-- if the argument of the sqrt
         is less than zero, return -1, to indicate a failure.
     """
-    FinalVSquared = (2 * Acceleration * DeltaX) + (Vinitial * Vinitial)
-    if FinalVSquared > 0:
-        return sqrt(FinalVSquared)
+    final_v_squared = (2 * acceleration * delta_x) + (v_initial * v_initial)
+    if final_v_squared > 0:
+        return sqrt(final_v_squared)
     else:
         return -1
