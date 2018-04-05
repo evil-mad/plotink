@@ -38,10 +38,6 @@ import inkex
 import serial
 
 
-def __init__(self):
-    ebbVersion = "none"
-
-
 def version():
     return "0.8"  # Version number for this document
 
