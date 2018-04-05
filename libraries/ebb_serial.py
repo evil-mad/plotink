@@ -56,7 +56,6 @@ def findPort():
         com_ports_list = list(comports())
         ebb_port = None
         for port in com_ports_list:
-            # inkex.errormsg(port[1])	#TODO REMOVE
             if port[1].startswith("EiBotBoard"):
                 ebb_port = port[0]  # Success; EBB found by name match.
                 break  # stop searching-- we are done.
@@ -80,7 +79,6 @@ def listEBBports():
         ebb_ports_list = []
         for port in com_ports_list:
             port_has_ebb = False
-            # inkex.errormsg(port[1])	#TODO REMOVE
             if port[1].startswith("EiBotBoard"):
                 port_has_ebb = True
             elif port[2].startswith("USB VID:PID=04D8:FD92"):
@@ -146,13 +144,13 @@ def closePort(com_port):
 
 
 def query(com_port, cmd):
-    if (com_port is not None) and (cmd is not None):
+    if com_port is not None and cmd is not None:
         response = ''
         try:
             com_port.write(cmd.encode('ascii'))
             response = com_port.readline().decode('ascii')
             n_retry_count = 0
-            while (len(response) == 0) and (n_retry_count < 100):
+            while len(response) == 0 and n_retry_count < 100:
                 # get new response to replace null response if necessary
                 response = com_port.readline()
                 n_retry_count += 1
@@ -161,7 +159,7 @@ def query(com_port, cmd):
                 # We skip this for those few queries that do not return an extra line.
                 unused_response = com_port.readline()  # read in extra blank/OK line
                 n_retry_count = 0
-                while (len(unused_response) == 0) and (n_retry_count < 100):
+                while len(unused_response) == 0 and n_retry_count < 100:
                     # get new response to replace null response if necessary
                     unused_response = com_port.readline()
                     n_retry_count += 1
@@ -173,26 +171,26 @@ def query(com_port, cmd):
 
 
 def command(com_port, cmd):
-    if (com_port is not None) and (cmd is not None):
+    if com_port is not None and cmd is not None:
         try:
             com_port.write(cmd.encode('ascii'))
             response = com_port.readline().decode('ascii')
             n_retry_count = 0
-            while (len(response) == 0) and (n_retry_count < 100):
+            while len(response) == 0 and n_retry_count < 100:
                 # get new response to replace null response if necessary
                 response = com_port.readline()
                 n_retry_count += 1
             if response.strip().startswith("OK"):
                 pass  # inkex.errormsg( 'OK after command: ' + cmd ) #Debug option: indicate which command.
             else:
-                if response != '':
+                if response:
                     inkex.errormsg('Error: Unexpected response from EBB.')
-                    inkex.errormsg('   Command: ' + cmd.strip())
-                    inkex.errormsg('   Response: ' + str(response.strip()))
+                    inkex.errormsg('   Command: {0}'.format(cmd.strip()))
+                    inkex.errormsg('   Response: {0}'.format(response.strip()))
                 else:
-                    inkex.errormsg('EBB Serial Timeout after command: ' + cmd)
+                    inkex.errormsg('EBB Serial Timeout after command: {0}'.format(cmd))
         except:
-            inkex.errormsg('Failed after command: ' + cmd)
+            inkex.errormsg('Failed after command: {0}'.format(cmd))
             pass
 
 
