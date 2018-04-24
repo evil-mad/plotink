@@ -81,9 +81,9 @@ def constrainLimits(value, lower_bound, upper_bound):
 
 
 def distance(x, y):
-    """
+    '''
     Pythagorean theorem!
-    """
+    '''
     return sqrt(x * x + y * y)
 
 
@@ -98,12 +98,12 @@ def dotProductXY(input_vector_first, input_vector_second):
 
 
 def getLength(altself, name, default):
-    """
+    '''
     Get the <svg> attribute with name "name" and default value "default"
     Parse the attribute into a value and associated units.  Then, accept
     no units (''), units of pixels ('px'), and units of percentage ('%').
     Return value in px.
-    """
+    '''
     string_to_parse = altself.document.getroot().get(name)
 
     if string_to_parse:
@@ -119,7 +119,7 @@ def getLength(altself, name, default):
             return float(v) * PX_PER_INCH / 25.4
         elif u == 'cm':
             return float(v) * PX_PER_INCH / 2.54
-        elif u == 'Q':
+        elif u == 'Q' or u == 'q':
             return float(v) * PX_PER_INCH / (40.0 * 2.54)
         elif u == 'pc':
             return float(v) * PX_PER_INCH / 6.0
@@ -136,12 +136,12 @@ def getLength(altself, name, default):
 
 
 def getLengthInches(altself, name):
-    """
+    '''
     Get the <svg> attribute with name "name" and default value "default"
     Parse the attribute into a value and associated units.  Then, accept
     units of inches ('in'), millimeters ('mm'), or centimeters ('cm')
     Return value in inches.
-    """
+    '''
     string_to_parse = altself.document.getroot().get(name)
     if string_to_parse:
         v, u = parseLengthWithUnits(string_to_parse)
@@ -154,7 +154,7 @@ def getLengthInches(altself, name):
             return float(v) / 25.4
         elif u == 'cm':
             return float(v) / 2.54
-        elif u == 'Q':
+        elif u == 'Q' or u == 'q':
             return float(v) / (40.0 * 2.54)
         elif u == 'pc':
             return float(v) / 6.0
@@ -166,11 +166,11 @@ def getLengthInches(altself, name):
 
 
 def parseLengthWithUnits(string_to_parse):
-    """
+    '''
     Parse an SVG value which may or may not have units attached.
     There is a more general routine to consider in scour.py if more
     generality is ever needed.
-    """
+    '''
     u = 'px'
     s = string_to_parse.strip()
     if s[-2:] == 'px':  # pixels, at a size of PX_PER_INCH per inch
@@ -206,12 +206,12 @@ def parseLengthWithUnits(string_to_parse):
 
 
 def unitsToUserUnits(input_string):
-    """
+    '''
     Custom replacement for the unittouu routine in inkex.py
 
     Parse the attribute into a value and associated units.
     Return value in user units (typically "px").
-    """
+    '''
 
     v, u = parseLengthWithUnits(input_string)
     if not v:
@@ -225,7 +225,7 @@ def unitsToUserUnits(input_string):
         return float(v) * PX_PER_INCH / 25.4
     elif u == 'cm':
         return float(v) * PX_PER_INCH / 2.54
-    elif u == 'Q':
+    elif u == 'Q' or u == 'q':
         return float(v) * PX_PER_INCH / (40.0 * 2.54)
     elif u == 'pc':
         return float(v) * PX_PER_INCH / 6.0
@@ -239,14 +239,14 @@ def unitsToUserUnits(input_string):
 
 
 def subdivideCubicPath(sp, flat, i=1):
-    """
+    '''
     Break up a bezier curve into smaller curves, each of which
     is approximately a straight line within a given tolerance
     (the "smoothness" defined by [flat]).
 
     This is a modified version of cspsubdiv.cspsubdiv(). I rewrote the recursive
     call because it caused recursion-depth errors on complicated line segments.
-    """
+    '''
 
     while True:
         while True:
@@ -271,12 +271,12 @@ def subdivideCubicPath(sp, flat, i=1):
 
 
 def userUnitToUnits(distance_uu, unit_string):
-    """
+    '''
     Custom replacement for the uutounit routine in inkex.py
 
     Parse the attribute into a value and associated units.
     Return value in user units (typically "px").
-    """
+    '''
 
     if not distance_uu:  # Couldn't parse the value
         return None
@@ -288,7 +288,7 @@ def userUnitToUnits(distance_uu, unit_string):
         return float(distance_uu) / (PX_PER_INCH / 25.4)
     elif unit_string == 'cm':
         return float(distance_uu) / (PX_PER_INCH / 2.54)
-    elif unit_string == 'Q':
+    elif unit_string == 'Q' or unit_string == 'q':
         return float(distance_uu) / (PX_PER_INCH / (40.0 * 2.54))
     elif unit_string == 'pc':
         return float(distance_uu) / (PX_PER_INCH / 6.0)
@@ -302,7 +302,7 @@ def userUnitToUnits(distance_uu, unit_string):
 
 
 def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
-    """
+    '''
     Kinematic calculation: Maximum allowed initial velocity to arrive at distance X
     with specified final velocity, and given maximum linear acceleration.
 
@@ -317,7 +317,7 @@ def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
 
     We are looking at the positive root only-- if the argument of the sqrt
         is less than zero, return -1, to indicate a failure.
-    """
+    '''
     initial_v_squared = (v_final * v_final) - (2 * acceleration * delta_x)
     if initial_v_squared > 0:
         return sqrt(initial_v_squared)
@@ -326,7 +326,7 @@ def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
 
 
 def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
-    """
+    '''
     Kinematic calculation: Final velocity with constant linear acceleration.
 
     Calculate and return the (real) final velocity, given an initial velocity,
@@ -340,7 +340,7 @@ def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
 
     We are looking at the positive root only-- if the argument of the sqrt
         is less than zero, return -1, to indicate a failure.
-    """
+    '''
     final_v_squared = (2 * acceleration * delta_x) + (v_initial * v_initial)
     if final_v_squared > 0:
         return sqrt(final_v_squared)
@@ -535,7 +535,6 @@ def pathdata_last_point(path):
                 while jx < path_length and current_command.upper() != 'V' and not (path[jx].isspace() or path[jx] == ','):
                     temp_x_val = temp_x_val + path[jx]
                     jx = jx + 1 
-                
                 # Then we know we have completely parsed the x character
 
                 # Now we are in front of the y character
@@ -549,7 +548,6 @@ def pathdata_last_point(path):
                 while jx < path_length and current_command.upper() != 'H' and not (path[jx].isspace() or path[jx] == ','):
                     temp_y_val = temp_y_val + path[jx]
                     jx = jx + 1 
-                
                 # Then we know we have completely parsed the y character
 
                 if is_absolute_command:
