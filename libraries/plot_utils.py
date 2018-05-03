@@ -6,7 +6,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.10.0, Dated April 16, 2018.
+# See below for version information
 #
 #
 # The MIT License (MIT)
@@ -37,11 +37,12 @@ import cspsubdiv
 import simplepath
 from bezmisc import beziersplitatt
 
-def version():
-    return "0.10"  # Version number for this document
+def version():    # Version number for this document
+    return "0.10" # v 0.10.1 Dated 2018-05-03
 
 
-PX_PER_INCH = 90.0  # 90 px per inch, as of Inkscape 0.91
+PX_PER_INCH = 90.0  # 90 px per inch, for use with Inkscape 0.91
+# This value has migrated to 96 px per inch, as of Inkscape 0.92
 
 
 # Note that the SVG specification is for 96 px per inch;
@@ -137,10 +138,18 @@ def getLength(altself, name, default):
 
 def getLengthInches(altself, name):
     '''
-    Get the <svg> attribute with name "name" and default value "default"
-    Parse the attribute into a value and associated units.  Then, accept
-    units of inches ('in'), millimeters ('mm'), or centimeters ('cm')
-    Return value in inches.
+    Get the <svg> attribute with name "name", and parse it as a length,
+    into a value and associated units. Return value in inches.
+    
+    As of version 0.11, units of 'px' or no units ('') are interpreted
+    as imported px, at a resolution of 96 px per inch, as per the SVG
+    specification. (Prior versions returned None in this case.)
+    
+    This allows certain imported SVG files, (imported with units of px)
+    to plot while they would not previously. However, it may also cause
+    new scaling issues in some circumstances. Note, for example, that
+    Adobe Illustrator uses 72 px per inch, and Inkscape used 90 px per
+    inch prior to version 0.92.
     '''
     string_to_parse = altself.document.getroot().get(name)
     if string_to_parse:
@@ -160,8 +169,10 @@ def getLengthInches(altself, name):
             return float(v) / 6.0
         elif u == 'pt':
             return float(v) / 72.0
+        elif u == '' or u == 'px':
+            return float(v) / 96.0
         else:
-            # Unsupported units
+            # Unsupported units, including '%'
             return None
 
 
