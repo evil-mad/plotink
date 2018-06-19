@@ -31,13 +31,11 @@
 # SOFTWARE.
 
 import math
-from distutils.version import LooseVersion
-
 import ebb_serial
 
 
 def version():  # Report version number for this document
-    return "0.14"  # Dated March 5, 2018
+    return "0.15"  # Dated June 18, 2018
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -307,28 +305,20 @@ def queryEBBLV(port_name):
 def queryVoltage(port_name):
     # Query the EBB motor power supply input voltage.
     if port_name is not None:
-        ebb_version_string = ebb_serial.queryVersion(port_name)  # Full string, human readable
-
-        ebb_version_string = ebb_version_string.split("Firmware Version ", 1)
-
-        if len(ebb_version_string) > 1:
-            ebb_version_string = ebb_version_string[1]
+        version_status = ebb_serial.min_version(port_name,"2.2.3")
+        if not version_status:
+            return True # Unable to read version, or version is below 2.2.3.
+                        # In these cases, issue no voltage warning.
         else:
-            return True  # We haven't received a reasonable version number response.
-
-        # Ignore voltage test and return.
-        ebb_version_string = ebb_version_string.strip()  # Stripped copy, for version # comparisons
-        if ebb_version_string is not "none":
-            if LooseVersion(ebb_version_string) >= LooseVersion("2.2.3"):
-                raw_string = (ebb_serial.query(port_name, 'QC\r'))
-                split_string = raw_string.split(",", 1)
-                split_len = len(split_string)
-                if split_len > 1:
-                    voltage_value = int(split_string[1])  # Pick second value only
-                else:
-                    return True  # We haven't received a reasonable voltage string response.
-                    # Ignore voltage test and return.
-                # Typical reading is about 300, for 9 V input.
-                if voltage_value < 250:
-                    return False
+            raw_string = (ebb_serial.query(port_name, 'QC\r'))
+            split_string = raw_string.split(",", 1)
+            split_len = len(split_string)
+            if split_len > 1:
+                voltage_value = int(split_string[1])  # Pick second value only
+            else:
+                return True  # We haven't received a reasonable voltage string response.
+                # Ignore voltage test and return.
+            # Typical reading is about 300, for 9 V input.
+            if voltage_value < 250:
+                return False
     return True

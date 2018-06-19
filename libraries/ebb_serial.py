@@ -6,7 +6,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.9, Dated March 5, 2018.
+# Version 0.10, Dated June 17, 2018.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -36,14 +36,16 @@ import gettext
 
 import inkex
 import serial
+from distutils.version import LooseVersion
 
 
 def version():
-    return "0.8"  # Version number for this document
+    return "0.10"  # Version number for this document
 
 
 def findPort():
-    # Find a single EiBotBoard connected to a USB port.
+    # Find first available EiBotBoard by searching USB ports.
+    # Return serial port object.
     try:
         from serial.tools.list_ports import comports
     except ImportError:
@@ -61,6 +63,53 @@ def findPort():
                     ebb_port = port[0]  # Success; EBB found by VID/PID match.
                     break  # stop searching-- we are done.
         return ebb_port
+
+
+def query_nickname(port_name):
+    # Query the EBB nickname and report it.
+    # This feature is only supported in firmware versions 2.5.4 and newer.
+    # http://evil-mad.github.io/EggBot/ebb.html#QT
+    if port_name is not None:
+        version_status = min_version(port_name, "2.5.4")
+    
+        if version_status:
+            raw_string = (query(port_name, 'QT\r'))
+            if raw_string.isspace():
+                return "This AxiDraw does not have a nickname assigned."
+            else:
+                return "AxiDraw nickname: " + raw_string
+        elif version_status is False:
+            return "AxiDraw naming requires firmware version 2.5.4 or higher."
+
+
+def write_nickname(port_name, nickname):
+    # Write the EBB nickname.
+    # This feature is only supported in firmware versions 2.5.4 and newer.
+    # http://evil-mad.github.io/EggBot/ebb.html#ST
+    if port_name is not None:
+        version_status = min_version(port_name, "2.5.4")
+    
+        if version_status:
+            try:
+                cmd = 'ST,' + nickname + '\r'
+                command(port_name,cmd)
+                return True
+            except:
+                return False
+
+
+def reboot(port_name):
+    # Reboot the EBB, as though it were just powered on. 
+    # This feature is only supported in firmware versions 2.5.4 and newer.
+    # It has no effect if called on an EBB with older firmware.
+    # http://evil-mad.github.io/EggBot/ebb.html#RB
+    if port_name is not None:
+        version_status = min_version(port_name, "2.5.4")
+        if version_status:
+            try:
+                command(port_name,'RB\r')
+            except:
+                pass
 
 
 def listEBBports():
@@ -86,19 +135,19 @@ def listEBBports():
     return None
 
 
-def testPort(com_port):
+def testPort(port_name):
     """
     Open a given serial port, verify that it is an EiBotBoard,
     and return a SerialPort object that we can reference later.
 
     This routine only opens the port;
-    it will need to be closed as well, for example with closePort( com_port ).
+    it will need to be closed as well, for example with closePort( port_name ).
     You, who open the port, are responsible for closing it as well.
 
     """
-    if com_port is not None:
+    if port_name is not None:
         try:
-            serial_port = serial.Serial(com_port, timeout=1.0)  # 1 second timeout!
+            serial_port = serial.Serial(port_name, timeout=1.0)  # 1 second timeout!
 
             serial_port.flushInput()  # deprecated function name;
             # use serial_port.reset_input_buffer()
@@ -131,33 +180,33 @@ def openPort():
     return None
 
 
-def closePort(com_port):
-    if com_port is not None:
+def closePort(port_name):
+    if port_name is not None:
         try:
-            com_port.close()
+            port_name.close()
         except serial.SerialException:
             pass
 
 
-def query(com_port, cmd):
-    if com_port is not None and cmd is not None:
+def query(port_name, cmd):
+    if port_name is not None and cmd is not None:
         response = ''
         try:
-            com_port.write(cmd.encode('ascii'))
-            response = com_port.readline().decode('ascii')
+            port_name.write(cmd.encode('ascii'))
+            response = port_name.readline().decode('ascii')
             n_retry_count = 0
             while len(response) == 0 and n_retry_count < 100:
                 # get new response to replace null response if necessary
-                response = com_port.readline()
+                response = port_name.readline()
                 n_retry_count += 1
             if cmd.strip().lower() not in ["v", "i", "a", "mr", "pi", "qm"]:
                 # Most queries return an "OK" after the data requested.
                 # We skip this for those few queries that do not return an extra line.
-                unused_response = com_port.readline()  # read in extra blank/OK line
+                unused_response = port_name.readline()  # read in extra blank/OK line
                 n_retry_count = 0
                 while len(unused_response) == 0 and n_retry_count < 100:
                     # get new response to replace null response if necessary
-                    unused_response = com_port.readline()
+                    unused_response = port_name.readline()
                     n_retry_count += 1
         except:
             inkex.errormsg(gettext.gettext("Error reading serial data."))
@@ -166,15 +215,15 @@ def query(com_port, cmd):
         return None
 
 
-def command(com_port, cmd):
-    if com_port is not None and cmd is not None:
+def command(port_name, cmd):
+    if port_name is not None and cmd is not None:
         try:
-            com_port.write(cmd.encode('ascii'))
-            response = com_port.readline().decode('ascii')
+            port_name.write(cmd.encode('ascii'))
+            response = port_name.readline().decode('ascii')
             n_retry_count = 0
             while len(response) == 0 and n_retry_count < 100:
                 # get new response to replace null response if necessary
-                response = com_port.readline()
+                response = port_name.readline()
                 n_retry_count += 1
             if response.strip().startswith("OK"):
                 pass  # inkex.errormsg( 'OK after command: ' + cmd ) #Debug option: indicate which command.
@@ -186,19 +235,41 @@ def command(com_port, cmd):
                 else:
                     inkex.errormsg('EBB Serial Timeout after command: {0}'.format(cmd))
         except:
-            inkex.errormsg('Failed after command: {0}'.format(cmd))
-            pass
+            if cmd.strip().lower() not in ["rb"]: # Ignore error on reboot (RB) command
+	            inkex.errormsg('Failed after command: {0}'.format(cmd))
 
 
-def bootload(com_port):
+def bootload(port_name):
     # Enter bootloader mode. Do not try to read back data.
-    if com_port is not None:
+    if port_name is not None:
         try:
-            com_port.write('BL\r'.encode('ascii'))
+            port_name.write('BL\r'.encode('ascii'))
         except:
             inkex.errormsg('Failed while trying to enter bootloader.')
-            pass
 
 
-def queryVersion(com_port):
-    return query(com_port, 'V\r')  # Query EBB Version String
+def min_version(port_name, version_string):
+    # Query the EBB firmware version for the EBB located at port_name.
+    # Return True if the EBB firmware version is at least version_string.
+    # Return False if the EBB firmware version is below version_string.
+    # Return None if we are unable to determine True or False.
+    
+    if port_name is not None:
+        ebb_version_string = queryVersion(port_name)  # Full string, human readable
+        ebb_version_string = ebb_version_string.split("Firmware Version ", 1)
+
+        if len(ebb_version_string) > 1:
+            ebb_version_string = ebb_version_string[1]
+        else:
+            return None  # We haven't received a reasonable version number response.
+
+        ebb_version_string = ebb_version_string.strip()  # Stripped copy, for number comparisons
+        if ebb_version_string is not "none":
+            if LooseVersion(ebb_version_string) >= LooseVersion(version_string):
+                return True
+            else:
+                return False
+
+
+def queryVersion(port_name):
+    return query(port_name, 'V\r')  # Query EBB Version String
