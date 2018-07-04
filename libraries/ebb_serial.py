@@ -40,7 +40,7 @@ from distutils.version import LooseVersion
 
 
 def version():
-    return "0.10"  # Version number for this document
+    return "0.11"  # Version number for this document
 
 
 def findPort():
@@ -63,6 +63,34 @@ def findPort():
                     ebb_port = port[0]  # Success; EBB found by VID/PID match.
                     break  # stop searching-- we are done.
         return ebb_port
+
+
+def find_named_ebb(port_name):
+    # Find a specific EiBotBoard identified by a string giving either:
+    #        The enumerated serial port, or
+    #        An EBB "Name tag"
+    #
+    # (Name tags may assigned with the ST command on firmware 2.5.4 and later.)
+    #
+    # If found:     Return serial port object 
+    # If not found, Return None
+    if port_name is not None:
+        try:
+            from serial.tools.list_ports import comports
+        except ImportError:
+            return None
+        if comports:
+            com_ports_list = list(comports())
+            ebb_port = None
+            # May need to add escaping of quotation marks.
+            for port in com_ports_list:
+                p0 = port[0]
+                p1 = port[1]
+                p1 = p1[11:]
+                if p1.startswith(port_name):
+                    return port[0]  # Success; EBB found by name match.
+                if p0.startswith(port_name):
+                    return port[0]  # Success; EBB found by port match.
 
 
 def query_nickname(port_name):
@@ -96,7 +124,8 @@ def write_nickname(port_name, nickname):
                 return True
             except:
                 return False
-
+        else:
+            inkex.errormsg("AxiDraw naming requires firmware version 2.5.4 or higher.")
 
 def reboot(port_name):
     # Reboot the EBB, as though it were just powered on. 
@@ -110,6 +139,23 @@ def reboot(port_name):
                 command(port_name,'RB\r')
             except:
                 pass
+
+
+def list_port_info():
+    # Find and return a list of all USB devices and their information.
+    try:
+        from serial.tools.list_ports import comports
+    except ImportError:
+        return None
+    if comports:
+        com_ports_list = list(comports())
+        port_info_list = []
+        for port in com_ports_list:
+            port_info_list.append(port[0]) # port name
+            port_info_list.append(port[1]) # Identifier
+            port_info_list.append(port[2]) # VID/PID
+        if port_info_list:
+            return port_info_list
 
 
 def listEBBports():
@@ -132,7 +178,6 @@ def listEBBports():
                 ebb_ports_list.append(port)
         if ebb_ports_list:
             return ebb_ports_list
-    return None
 
 
 def testPort(port_name):
@@ -166,8 +211,6 @@ def testPort(port_name):
         except serial.SerialException:
             pass
         return None
-    else:
-        return None
 
 
 def openPort():
@@ -177,7 +220,15 @@ def openPort():
     serial_port = testPort(found_port)
     if serial_port:
         return serial_port
-    return None
+
+
+def open_named_port(port_name):
+    # Find and open a port to a single attached EiBotBoard.
+    # The first port located will be used.
+    found_port = find_named_ebb(port_name)
+    serial_port = testPort(found_port)
+    if serial_port:
+        return serial_port
 
 
 def closePort(port_name):
@@ -211,8 +262,6 @@ def query(port_name, cmd):
         except:
             inkex.errormsg(gettext.gettext("Error reading serial data."))
         return response
-    else:
-        return None
 
 
 def command(port_name, cmd):
