@@ -6,7 +6,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.10, Dated June 17, 2018.
+# Version 0.12, Dated July 7, 2018.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -40,7 +40,7 @@ from distutils.version import LooseVersion
 
 
 def version():
-    return "0.11"  # Version number for this document
+    return "0.12"  # Version number for this document
 
 
 def findPort():
@@ -70,7 +70,7 @@ def find_named_ebb(port_name):
     #        The enumerated serial port, or
     #        An EBB "Name tag"
     #
-    # (Name tags may assigned with the ST command on firmware 2.5.4 and later.)
+    # (Name tags may assigned with the ST command on firmware 2.5.5 and later.)
     #
     # If found:     Return serial port object 
     # If not found, Return None
@@ -80,25 +80,31 @@ def find_named_ebb(port_name):
         except ImportError:
             return None
         if comports:
+            needle = 'SER=' + port_name
             com_ports_list = list(comports())
             ebb_port = None
             # May need to add escaping of quotation marks.
             for port in com_ports_list:
                 p0 = port[0]
                 p1 = port[1]
+                p2 = port[2]
+                if needle in p2:
+                    return port[0]  # Success; EBB found by port match.
                 p1 = p1[11:]
                 if p1.startswith(port_name):
                     return port[0]  # Success; EBB found by name match.
                 if p0.startswith(port_name):
                     return port[0]  # Success; EBB found by port match.
-
+                needle.replace(" ", "_") # SN display on Windows has underscores, not spaces.
+                if needle in p2:
+                    return port[0]  # Success; EBB found by port match.
 
 def query_nickname(port_name):
     # Query the EBB nickname and report it.
-    # This feature is only supported in firmware versions 2.5.4 and newer.
+    # This feature is only supported in firmware versions 2.5.5 and newer.
     # http://evil-mad.github.io/EggBot/ebb.html#QT
     if port_name is not None:
-        version_status = min_version(port_name, "2.5.4")
+        version_status = min_version(port_name, "2.5.5")
     
         if version_status:
             raw_string = (query(port_name, 'QT\r'))
@@ -107,15 +113,15 @@ def query_nickname(port_name):
             else:
                 return "AxiDraw nickname: " + raw_string
         elif version_status is False:
-            return "AxiDraw naming requires firmware version 2.5.4 or higher."
+            return "AxiDraw naming requires firmware version 2.5.5 or higher."
 
 
 def write_nickname(port_name, nickname):
     # Write the EBB nickname.
-    # This feature is only supported in firmware versions 2.5.4 and newer.
+    # This feature is only supported in firmware versions 2.5.5 and newer.
     # http://evil-mad.github.io/EggBot/ebb.html#ST
     if port_name is not None:
-        version_status = min_version(port_name, "2.5.4")
+        version_status = min_version(port_name, "2.5.5")
     
         if version_status:
             try:
@@ -125,15 +131,15 @@ def write_nickname(port_name, nickname):
             except:
                 return False
         else:
-            inkex.errormsg("AxiDraw naming requires firmware version 2.5.4 or higher.")
+            inkex.errormsg("AxiDraw naming requires firmware version 2.5.5 or higher.")
 
 def reboot(port_name):
     # Reboot the EBB, as though it were just powered on. 
-    # This feature is only supported in firmware versions 2.5.4 and newer.
+    # This feature is only supported in firmware versions 2.5.5 and newer.
     # It has no effect if called on an EBB with older firmware.
     # http://evil-mad.github.io/EggBot/ebb.html#RB
     if port_name is not None:
-        version_status = min_version(port_name, "2.5.4")
+        version_status = min_version(port_name, "2.5.5")
         if version_status:
             try:
                 command(port_name,'RB\r')
