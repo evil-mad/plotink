@@ -6,7 +6,7 @@
 # Intended to provide some common interfaces that can be used by 
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.12, Dated July 7, 2018.
+# Version 0.13, Dated July 9, 2018.
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions. 
 #
@@ -99,9 +99,11 @@ def find_named_ebb(port_name):
                 if needle in p2:
                     return port[0]  # Success; EBB found by port match.
 
-def query_nickname(port_name):
+def query_nickname(port_name, verbose=True):
     # Query the EBB nickname and report it.
     # This feature is only supported in firmware versions 2.5.5 and newer.
+    # If verbose is True or omitted, the result will be human readable.
+    # A short version is returned if verbose is False.
     # http://evil-mad.github.io/EggBot/ebb.html#QT
     if port_name is not None:
         version_status = min_version(port_name, "2.5.5")
@@ -109,12 +111,19 @@ def query_nickname(port_name):
         if version_status:
             raw_string = (query(port_name, 'QT\r'))
             if raw_string.isspace():
-                return "This AxiDraw does not have a nickname assigned."
+                if verbose:
+                    return "This AxiDraw does not have a nickname assigned."
+                else:
+                    return None
             else:
-                return "AxiDraw nickname: " + raw_string
+                if verbose:
+                    return "AxiDraw nickname: " + raw_string
+                else:
+#                     string_temp = str(raw_string).strip()
+                    return str(raw_string).strip()
         elif version_status is False:
-            return "AxiDraw naming requires firmware version 2.5.5 or higher."
-
+            if verbose:
+                return "AxiDraw naming requires firmware version 2.5.5 or higher."
 
 def write_nickname(port_name, nickname):
     # Write the EBB nickname.
@@ -130,8 +139,6 @@ def write_nickname(port_name, nickname):
                 return True
             except:
                 return False
-        else:
-            inkex.errormsg("AxiDraw naming requires firmware version 2.5.5 or higher.")
 
 def reboot(port_name):
     # Reboot the EBB, as though it were just powered on. 
@@ -299,8 +306,9 @@ def bootload(port_name):
     if port_name is not None:
         try:
             port_name.write('BL\r'.encode('ascii'))
+            return True
         except:
-            inkex.errormsg('Failed while trying to enter bootloader.')
+            return False
 
 
 def min_version(port_name, version_string):
