@@ -193,6 +193,36 @@ def listEBBports():
             return ebb_ports_list
 
 
+def list_named_ebbs():
+    # Return discriptive list of all EiBotBoard units
+    ebb_ports_list = listEBBports()
+    if not ebb_ports_list:
+        return
+    ebb_names_list = []
+    for port in ebb_ports_list:
+        name_found = False
+        p0 = port[0]
+        p1 = port[1]
+        p2 = port[2]
+        if p1.startswith("EiBotBoard"):
+            temp_string = p1[11:]
+            if (temp_string):
+                if temp_string is not None:
+                    ebb_names_list.append(temp_string)
+                    name_found = True
+        if not name_found:
+            if 'SER=' in p2 and ' LOCAT' in p2:
+                index1 = p2.find('SER=') + len('SER=')
+                index2 = p2.find(' LOCAT', index1)
+                temp_string = p2[index1:index2]
+                if temp_string is not None:
+                    ebb_names_list.append(temp_string)
+                    name_found = True
+        if not name_found:
+            ebb_names_list.append(p0)
+    return ebb_names_list
+
+
 def testPort(port_name):
     """
     Open a given serial port, verify that it is an EiBotBoard,
