@@ -215,6 +215,8 @@ def list_named_ebbs():
                 index1 = p2.find('SER=') + len('SER=')
                 index2 = p2.find(' LOCAT', index1)
                 temp_string = p2[index1:index2]
+                if len(temp_string) < 3:
+                    temp_string = None
                 if temp_string is not None:
                     ebb_names_list.append(temp_string)
                     name_found = True
