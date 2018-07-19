@@ -317,10 +317,12 @@ def command(port_name, cmd):
             n_retry_count = 0
             while len(response) == 0 and n_retry_count < 100:
                 # get new response to replace null response if necessary
-                response = port_name.readline()
+                response = port_name.readline().decode('ascii')
                 n_retry_count += 1
             if response.strip().startswith("OK"):
-                pass  # inkex.errormsg( 'OK after command: ' + cmd ) #Debug option: indicate which command.
+                # Debug option: indicate which command:
+                # inkex.errormsg( 'OK after command: ' + cmd ) 
+                pass  
             else:
                 if response:
                     inkex.errormsg('Error: Unexpected response from EBB.')
