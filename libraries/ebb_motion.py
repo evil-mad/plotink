@@ -35,7 +35,7 @@ import ebb_serial
 
 
 def version():  # Report version number for this document
-    return "0.15"  # Dated June 18, 2018
+    return "0.16"  # Dated July 22, 2018
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -299,7 +299,12 @@ def queryEBBLV(port_name):
     # Query the EBB "Layer" Variable, an 8-bit number we can read and write.
     # (Unrelated to our plot layers; name is an historical artifact.)
     if port_name is not None:
-        return int(ebb_serial.query(port_name, 'QL\r'))
+        value = ebb_serial.query(port_name, 'QL\r')
+        try: 
+            ret_val = int(value)
+            return value
+        except:
+            return None
 
 
 def queryVoltage(port_name):
