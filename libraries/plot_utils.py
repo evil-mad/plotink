@@ -40,9 +40,8 @@ from bezmisc import beziersplitatt
 def version():    # Version number for this document
     return "0.10" # v 0.10.1 Dated 2018-05-03
 
-
-PX_PER_INCH = 90.0  # 90 px per inch, for use with Inkscape 0.91
-# This value has migrated to 96 px per inch, as of Inkscape 0.92
+PX_PER_INCH = 96.0  # 96 px per inch, for use with Inkscape 0.92 or newer
+# This value has migrated from 90 px per inch, as of Inkscape 0.91 or older
 
 
 # Note that the SVG specification is for 96 px per inch;
