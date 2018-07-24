@@ -89,6 +89,7 @@ def find_named_ebb(port_name):
             needle = needle.lower()     
             needle2 = needle2.lower()
             needle3 = needle3.lower()
+            plower = port_name.lower()
             
             com_ports_list = list(comports())
             ebb_port = None
@@ -106,9 +107,9 @@ def find_named_ebb(port_name):
                     return port[0]  # Success; EBB found by port match.
                 
                 p1 = p1[11:]
-                if p1.startswith(port_name):
+                if p1.startswith(plower):
                     return port[0]  # Success; EBB found by name match.
-                if p0.startswith(port_name):
+                if p0.startswith(plower):
                     return port[0]  # Success; EBB found by port match.
                     
                 needle.replace(" ", "_") # SN on Windows has underscores, not spaces.
