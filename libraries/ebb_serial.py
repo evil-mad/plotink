@@ -35,9 +35,8 @@
 import gettext
 
 import inkex
-import serial
 from distutils.version import LooseVersion
-
+import serial
 
 def version():
     return "0.12"  # Version number for this document
@@ -70,9 +69,12 @@ def find_named_ebb(port_name):
     #        The enumerated serial port, or
     #        An EBB "Name tag"
     #
+    # Names should be 3-16 characters long.
+    # Comparisons are not case sensitive.
+    #
     # (Name tags may assigned with the ST command on firmware 2.5.5 and later.)
     #
-    # If found:     Return serial port object 
+    # If found:     Return serial port name (enumeration) 
     # If not found, Return None
     if port_name is not None:
         try:
@@ -80,24 +82,43 @@ def find_named_ebb(port_name):
         except ImportError:
             return None
         if comports:
-            needle = 'SER=' + port_name
+            needle = 'SER=' + port_name     # pyserial 3
+            needle2 = 'SNR=' + port_name    # pyserial 2.7
+            needle3 = '(' + port_name + ')' # e.g., "(COM4)"
+            
+            needle = needle.lower()     
+            needle2 = needle2.lower()
+            needle3 = needle3.lower()
+            
             com_ports_list = list(comports())
             ebb_port = None
-            # May need to add escaping of quotation marks.
+            
             for port in com_ports_list:
-                p0 = port[0]
-                p1 = port[1]
-                p2 = port[2]
+                p0 = port[0].lower()
+                p1 = port[1].lower()
+                p2 = port[2].lower()
+                
                 if needle in p2:
+                    return port[0]  # Success; EBB found by name match.
+                if needle2 in p2:
+                    return port[0]  # Success; EBB found by name match.
+                if needle3 in p1:
                     return port[0]  # Success; EBB found by port match.
+                
                 p1 = p1[11:]
                 if p1.startswith(port_name):
                     return port[0]  # Success; EBB found by name match.
                 if p0.startswith(port_name):
                     return port[0]  # Success; EBB found by port match.
-                needle.replace(" ", "_") # SN display on Windows has underscores, not spaces.
+                    
+                needle.replace(" ", "_") # SN on Windows has underscores, not spaces.
                 if needle in p2:
                     return port[0]  # Success; EBB found by port match.
+                    
+                needle2.replace(" ", "_") # SN on Windows has underscores, not spaces.
+                if needle2 in p2:
+                    return port[0]  # Success; EBB found by port match.
+
 
 def query_nickname(port_name, verbose=True):
     # Query the EBB nickname and report it.
@@ -211,9 +232,24 @@ def list_named_ebbs():
                     ebb_names_list.append(temp_string)
                     name_found = True
         if not name_found:
+            # Look for "SER=XXXX LOCAT" pattern,
+            #  typical of Pyserial 3 on Windows.
             if 'SER=' in p2 and ' LOCAT' in p2:
                 index1 = p2.find('SER=') + len('SER=')
                 index2 = p2.find(' LOCAT', index1)
+                temp_string = p2[index1:index2]
+                if len(temp_string) < 3:
+                    temp_string = None
+                if temp_string is not None:
+                    ebb_names_list.append(temp_string)
+                    name_found = True
+        if not name_found:
+            # Look for "...SNR=XXXX" pattern,
+            #  typical of Pyserial 2.7 on Windows,
+            #  as in Inkscape 0.91 on Windows
+            if 'SNR=' in p2:
+                index1 = p2.find('SNR=') + len('SNR=')
+                index2 = len(p2)
                 temp_string = p2[index1:index2]
                 if len(temp_string) < 3:
                     temp_string = None
