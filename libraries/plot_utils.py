@@ -38,15 +38,14 @@ import simplepath
 from bezmisc import beziersplitatt
 
 def version():    # Version number for this document
-    return "0.10" # v 0.10.1 Dated 2018-05-03
-
+    return "0.11" # v 0.11.0 Dated 2018-08-24
 
 PX_PER_INCH = 90.0  # 90 px per inch, for use with Inkscape 0.91
 # This value has migrated to 96 px per inch, as of Inkscape 0.92
 
-
 # Note that the SVG specification is for 96 px per inch;
 # Expect a change to 96 as of Inkscape 0.92.
+
 
 def checkLimits(value, lower_bound, upper_bound):
     # Limit a value to within a range.
@@ -76,15 +75,99 @@ def checkLimitsTol(value, lower_bound, upper_bound, tolerance):
     return value, False  # Return original value without error
 
 
+def clip_code(x, y, x_min, x_max, y_min, y_max):
+    # Encode point position with respect to boundary box
+    code = 0
+    if x < x_min:
+        code = 1  # Left
+    if x > x_max:
+        code |= 2 # Right
+    if y < y_min:
+        code |= 4 # Top
+    if y > y_max:
+        code |= 8 # Bottom
+    return code
+
+
+def clip_segment(segment, bounds):
+    """
+    Given an input line segment [[x1,y1],[x2,y2]], as well as a
+    rectangular bounding region [[x_min,y_min],[x_max,y_max]], clip and
+    keep the part of the segment within the bounding region, using the
+    Cohen–Sutherland algorithm.
+    Return a boolean value, "accept", indicating that the output
+    segment is non-empty, as well as truncated segment, 
+    [[x1',y1'],[x2',y2']], giving the portion of the input line segment
+    that fits within the bounds.
+    """
+
+    x1 = segment[0][0]
+    y1 = segment[0][1]
+    x2 = segment[1][0]
+    y2 = segment[1][1]
+
+    x_min = bounds[0][0]
+    y_min = bounds[0][1]
+    x_max = bounds[1][0]
+    y_max = bounds[1][1]
+
+    while True: # Repeat until return
+        code_1 = clip_code(x1, y1, x_min, x_max, y_min, y_max)
+        code_2 = clip_code(x2, y2, x_min, x_max, y_min, y_max)
+
+        # Trivial accept:
+        if code_1 == 0 and code_2 == 0:
+            return True, segment # Both endpoints are within bounds.
+        # Trivial reject, if both endpoints are outside, and on the same side:
+        if code_1 & code_2:
+            return False, segment # Verify with bitwise AND.
+        
+        # Otherwise, at least one point is out of bounds; not trivial.
+        if code_1 != 0:
+            code = code_1
+        else:
+            code = code_2
+
+        # Clip at a single boundary; may need to do this up to twice per vertex
+
+        if code & 1: # Vertex on LEFT side of bounds:
+            x = x_min  # Find intersection of our segment with x_min
+            slope = (y2 - y1) / (x2 - x1)
+            y = slope * (x_min - x1) + y1
+            
+        elif code & 2:  # Vertex on RIGHT side of bounds:
+            x = x_max # Find intersection of our segment with x_max
+            slope = (y2 - y1) / (x2 - x1)
+            y = slope * (x_max - x1) + y1
+
+        elif code & 4: # Vertex on TOP side of bounds:
+            y = y_min  # Find intersection of our segment with y_min
+            slope = (x2 - x1) / (y2 - y1)
+            x = slope * (y_min - y1) + x1
+            
+        elif code & 8: # Vertex on BOTTOM side of bounds:
+            y = y_max  # Find intersection of our segment with y_max
+            slope = (x2 - x1) / (y2 - y1)
+            x = slope * (y_max - y1) + x1
+
+        if code == code_1:
+            x1 = x
+            y1 = y
+        else:
+            x2 = x
+            y2 = y
+        segment = [[x1,y1],[x2,y2]] # Now checking this clipped segment
+
+
 def constrainLimits(value, lower_bound, upper_bound):
     # Limit a value to within a range.
     return max(lower_bound, min(upper_bound, value))
 
 
 def distance(x, y):
-    '''
-    Pythagorean theorem!
-    '''
+    """
+    Pythagorean theorem
+    """
     return sqrt(x * x + y * y)
 
 
@@ -99,12 +182,12 @@ def dotProductXY(input_vector_first, input_vector_second):
 
 
 def getLength(altself, name, default):
-    '''
+    """
     Get the <svg> attribute with name "name" and default value "default"
     Parse the attribute into a value and associated units.  Then, accept
     no units (''), units of pixels ('px'), and units of percentage ('%').
     Return value in px.
-    '''
+    """
     string_to_parse = altself.document.getroot().get(name)
 
     if string_to_parse:
@@ -137,7 +220,7 @@ def getLength(altself, name, default):
 
 
 def getLengthInches(altself, name):
-    '''
+    """
     Get the <svg> attribute with name "name", and parse it as a length,
     into a value and associated units. Return value in inches.
     
@@ -150,7 +233,7 @@ def getLengthInches(altself, name):
     new scaling issues in some circumstances. Note, for example, that
     Adobe Illustrator uses 72 px per inch, and Inkscape used 90 px per
     inch prior to version 0.92.
-    '''
+    """
     string_to_parse = altself.document.getroot().get(name)
     if string_to_parse:
         v, u = parseLengthWithUnits(string_to_parse)
@@ -177,11 +260,11 @@ def getLengthInches(altself, name):
 
 
 def parseLengthWithUnits(string_to_parse):
-    '''
+    """
     Parse an SVG value which may or may not have units attached.
     There is a more general routine to consider in scour.py if more
     generality is ever needed.
-    '''
+    """
     u = 'px'
     s = string_to_parse.strip()
     if s[-2:] == 'px':  # pixels, at a size of PX_PER_INCH per inch
@@ -217,12 +300,12 @@ def parseLengthWithUnits(string_to_parse):
 
 
 def unitsToUserUnits(input_string):
-    '''
+    """
     Custom replacement for the unittouu routine in inkex.py
 
     Parse the attribute into a value and associated units.
     Return value in user units (typically "px").
-    '''
+    """
 
     v, u = parseLengthWithUnits(input_string)
     if not v:
@@ -250,14 +333,14 @@ def unitsToUserUnits(input_string):
 
 
 def subdivideCubicPath(sp, flat, i=1):
-    '''
+    """
     Break up a bezier curve into smaller curves, each of which
     is approximately a straight line within a given tolerance
     (the "smoothness" defined by [flat]).
 
     This is a modified version of cspsubdiv.cspsubdiv(). I rewrote the recursive
     call because it caused recursion-depth errors on complicated line segments.
-    '''
+    """
 
     while True:
         while True:
@@ -282,12 +365,12 @@ def subdivideCubicPath(sp, flat, i=1):
 
 
 def userUnitToUnits(distance_uu, unit_string):
-    '''
+    """
     Custom replacement for the uutounit routine in inkex.py
 
     Parse the attribute into a value and associated units.
     Return value in user units (typically "px").
-    '''
+    """
 
     if not distance_uu:  # Couldn't parse the value
         return None
@@ -313,7 +396,7 @@ def userUnitToUnits(distance_uu, unit_string):
 
 
 def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
-    '''
+    """
     Kinematic calculation: Maximum allowed initial velocity to arrive at distance X
     with specified final velocity, and given maximum linear acceleration.
 
@@ -328,7 +411,7 @@ def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
 
     We are looking at the positive root only-- if the argument of the sqrt
         is less than zero, return -1, to indicate a failure.
-    '''
+    """
     initial_v_squared = (v_final * v_final) - (2 * acceleration * delta_x)
     if initial_v_squared > 0:
         return sqrt(initial_v_squared)
@@ -337,7 +420,7 @@ def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
 
 
 def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
-    '''
+    """
     Kinematic calculation: Final velocity with constant linear acceleration.
 
     Calculate and return the (real) final velocity, given an initial velocity,
@@ -351,7 +434,7 @@ def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
 
     We are looking at the positive root only-- if the argument of the sqrt
         is less than zero, return -1, to indicate a failure.
-    '''
+    """
     final_v_squared = (2 * acceleration * delta_x) + (v_initial * v_initial)
     if final_v_squared > 0:
         return sqrt(final_v_squared)
@@ -360,12 +443,12 @@ def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
 
 
 def pathdata_first_point(path):
-    '''
+    """
     Return the first (X,Y) point from an SVG path data string
     
     Input:  A path data string; the text of the 'd' attribute of an SVG path
     Output: Two floats in a list representing the x and y coordinates of the first point
-    '''
+    """
     
     # Path origin's default values are used to see if we have
     # Written anything to the path_origin variable yet
@@ -432,19 +515,19 @@ def pathdata_first_point(path):
 
 
 def pathdata_last_point(path):
-    '''
+    """
     Return the last (X,Y) point from an SVG path data string
     
     Input:  A path data string; the text of the 'd' attribute of an SVG path
     Output: Two floats in a list representing the x and y coordinates of the last point
-    '''
+    """
 
     command, params = simplepath.parsePath(path)[-1] # parsePath splits path into segments
 
     if command.upper() == 'Z':
         return pathdata_first_point(path)	# Trivial case
     
-    '''
+    """
     Otherwise: The last command should be in the set 'MLCQA'
         - All commands converted to absolute by parsePath.
         - Can ignore Z (case handled)
@@ -453,7 +536,7 @@ def pathdata_last_point(path):
         - Can ignore T, converted to Q by parsePath.
         
         MLCQA: Commands all ending in (X,Y) pair. 
-    '''
+    """
     
     x_val = params[-2] # Second to last parameter given
     y_val = params[-1] # Last parameter given
