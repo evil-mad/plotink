@@ -1,28 +1,28 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 # plot_utils.py
 # Common geometric plotting utilities for EiBotBoard
 # https://github.com/evil-mad/plotink
-# 
-# Intended to provide some common interfaces that can be used by 
+#
+# Intended to provide some common interfaces that can be used by
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
 # See below for version information
 #
 #
 # The MIT License (MIT)
-# 
+#
 # Copyright (c) 2018 Windell H. Oskay, Evil Mad Scientist Laboratories
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -40,12 +40,9 @@ from bezmisc import beziersplitatt
 def version():    # Version number for this document
     return "0.11" # v 0.11.0 Dated 2018-08-24
 
-PX_PER_INCH = 90.0  # 90 px per inch, for use with Inkscape 0.91
+PX_PER_INCH = 96.0
 # This value has migrated to 96 px per inch, as of Inkscape 0.92
-
-# Note that the SVG specification is for 96 px per inch;
-# Expect a change to 96 as of Inkscape 0.92.
-
+# Inkscape 0.92 was released January 4, 2017.
 
 def checkLimits(value, lower_bound, upper_bound):
     # Limit a value to within a range.
@@ -96,7 +93,7 @@ def clip_segment(segment, bounds):
     keep the part of the segment within the bounding region, using the
     Cohen–Sutherland algorithm.
     Return a boolean value, "accept", indicating that the output
-    segment is non-empty, as well as truncated segment, 
+    segment is non-empty, as well as truncated segment,
     [[x1',y1'],[x2',y2']], giving the portion of the input line segment
     that fits within the bounds.
     """
@@ -121,7 +118,7 @@ def clip_segment(segment, bounds):
         # Trivial reject, if both endpoints are outside, and on the same side:
         if code_1 & code_2:
             return False, segment # Verify with bitwise AND.
-        
+
         # Otherwise, at least one point is out of bounds; not trivial.
         if code_1 != 0:
             code = code_1
@@ -134,7 +131,7 @@ def clip_segment(segment, bounds):
             x = x_min  # Find intersection of our segment with x_min
             slope = (y2 - y1) / (x2 - x1)
             y = slope * (x_min - x1) + y1
-            
+
         elif code & 2:  # Vertex on RIGHT side of bounds:
             x = x_max # Find intersection of our segment with x_max
             slope = (y2 - y1) / (x2 - x1)
@@ -144,7 +141,7 @@ def clip_segment(segment, bounds):
             y = y_min  # Find intersection of our segment with y_min
             slope = (x2 - x1) / (y2 - y1)
             x = slope * (y_min - y1) + x1
-            
+
         elif code & 8: # Vertex on BOTTOM side of bounds:
             y = y_max  # Find intersection of our segment with y_max
             slope = (x2 - x1) / (y2 - y1)
@@ -223,11 +220,11 @@ def getLengthInches(altself, name):
     """
     Get the <svg> attribute with name "name", and parse it as a length,
     into a value and associated units. Return value in inches.
-    
+
     As of version 0.11, units of 'px' or no units ('') are interpreted
     as imported px, at a resolution of 96 px per inch, as per the SVG
     specification. (Prior versions returned None in this case.)
-    
+
     This allows certain imported SVG files, (imported with units of px)
     to plot while they would not previously. However, it may also cause
     new scaling issues in some circumstances. Note, for example, that
@@ -445,11 +442,11 @@ def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
 def pathdata_first_point(path):
     """
     Return the first (X,Y) point from an SVG path data string
-    
+
     Input:  A path data string; the text of the 'd' attribute of an SVG path
     Output: Two floats in a list representing the x and y coordinates of the first point
     """
-    
+
     # Path origin's default values are used to see if we have
     # Written anything to the path_origin variable yet
     MaxLength = len(path)
@@ -489,13 +486,13 @@ def pathdata_first_point(path):
 
     # Reset tempString for y coordinate
     tempString = ''
-    
+
     # Parse path until we reach a digit or decimal point
     while ix < MaxLength:
         if(path[ix].isdigit()) or path[ix] == '.' or path[ix] == '-':
             break
             ix = ix + 1
-    
+
     # Add digits and decimal points to y_val
     # Stop parsin when next character is neither a digit nor a decimal point
     while ix < MaxLength:
@@ -517,7 +514,7 @@ def pathdata_first_point(path):
 def pathdata_last_point(path):
     """
     Return the last (X,Y) point from an SVG path data string
-    
+
     Input:  A path data string; the text of the 'd' attribute of an SVG path
     Output: Two floats in a list representing the x and y coordinates of the last point
     """
@@ -526,7 +523,7 @@ def pathdata_last_point(path):
 
     if command.upper() == 'Z':
         return pathdata_first_point(path)	# Trivial case
-    
+
     """
     Otherwise: The last command should be in the set 'MLCQA'
         - All commands converted to absolute by parsePath.
@@ -534,11 +531,11 @@ def pathdata_last_point(path):
         - Can ignore H,V, since those are converted to L by parsePath.
         - Can ignore S, converted to C by parsePath.
         - Can ignore T, converted to Q by parsePath.
-        
-        MLCQA: Commands all ending in (X,Y) pair. 
+
+        MLCQA: Commands all ending in (X,Y) pair.
     """
-    
+
     x_val = params[-2] # Second to last parameter given
     y_val = params[-1] # Last parameter given
-    
+
     return [x_val,y_val]
