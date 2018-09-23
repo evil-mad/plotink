@@ -2,28 +2,28 @@
 # ebb_serial.py
 # Serial connection utilities for EiBotBoard
 # https://github.com/evil-mad/plotink
-# 
-# Intended to provide some common interfaces that can be used by 
+#
+# Intended to provide some common interfaces that can be used by
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
 # Version 0.13, Dated July 9, 2018.
 #
-# Thanks to Shel Michaels for bug fixes and helpful suggestions. 
+# Thanks to Shel Michaels for bug fixes and helpful suggestions.
 #
 # The MIT License (MIT)
-# 
+#
 # Copyright (c) 2018 Windell H. Oskay, Evil Mad Scientist Laboratories
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -74,7 +74,7 @@ def find_named_ebb(port_name):
     #
     # (Name tags may assigned with the ST command on firmware 2.5.5 and later.)
     #
-    # If found:     Return serial port name (enumeration) 
+    # If found:     Return serial port name (enumeration)
     # If not found, Return None
     if port_name is not None:
         try:
@@ -85,37 +85,37 @@ def find_named_ebb(port_name):
             needle = 'SER=' + port_name     # pyserial 3
             needle2 = 'SNR=' + port_name    # pyserial 2.7
             needle3 = '(' + port_name + ')' # e.g., "(COM4)"
-            
-            needle = needle.lower()     
+
+            needle = needle.lower()
             needle2 = needle2.lower()
             needle3 = needle3.lower()
             plower = port_name.lower()
-            
+
             com_ports_list = list(comports())
             ebb_port = None
-            
+
             for port in com_ports_list:
                 p0 = port[0].lower()
                 p1 = port[1].lower()
                 p2 = port[2].lower()
-                
+
                 if needle in p2:
                     return port[0]  # Success; EBB found by name match.
                 if needle2 in p2:
                     return port[0]  # Success; EBB found by name match.
                 if needle3 in p1:
                     return port[0]  # Success; EBB found by port match.
-                
+
                 p1 = p1[11:]
                 if p1.startswith(plower):
                     return port[0]  # Success; EBB found by name match.
                 if p0.startswith(plower):
                     return port[0]  # Success; EBB found by port match.
-                    
+
                 needle.replace(" ", "_") # SN on Windows has underscores, not spaces.
                 if needle in p2:
                     return port[0]  # Success; EBB found by port match.
-                    
+
                 needle2.replace(" ", "_") # SN on Windows has underscores, not spaces.
                 if needle2 in p2:
                     return port[0]  # Success; EBB found by port match.
@@ -129,7 +129,7 @@ def query_nickname(port_name, verbose=True):
     # http://evil-mad.github.io/EggBot/ebb.html#QT
     if port_name is not None:
         version_status = min_version(port_name, "2.5.5")
-    
+
         if version_status:
             raw_string = (query(port_name, 'QT\r'))
             if raw_string.isspace():
@@ -153,7 +153,7 @@ def write_nickname(port_name, nickname):
     # http://evil-mad.github.io/EggBot/ebb.html#ST
     if port_name is not None:
         version_status = min_version(port_name, "2.5.5")
-    
+
         if version_status:
             try:
                 cmd = 'ST,' + nickname + '\r'
@@ -163,7 +163,7 @@ def write_nickname(port_name, nickname):
                 return False
 
 def reboot(port_name):
-    # Reboot the EBB, as though it were just powered on. 
+    # Reboot the EBB, as though it were just powered on.
     # This feature is only supported in firmware versions 2.5.5 and newer.
     # It has no effect if called on an EBB with older firmware.
     # http://evil-mad.github.io/EggBot/ebb.html#RB
@@ -358,8 +358,8 @@ def command(port_name, cmd):
                 n_retry_count += 1
             if response.strip().startswith("OK"):
                 # Debug option: indicate which command:
-                # inkex.errormsg( 'OK after command: ' + cmd ) 
-                pass  
+                # inkex.errormsg( 'OK after command: ' + cmd )
+                pass
             else:
                 if response:
                     inkex.errormsg('Error: Unexpected response from EBB.')
@@ -387,7 +387,7 @@ def min_version(port_name, version_string):
     # Return True if the EBB firmware version is at least version_string.
     # Return False if the EBB firmware version is below version_string.
     # Return None if we are unable to determine True or False.
-    
+
     if port_name is not None:
         ebb_version_string = queryVersion(port_name)  # Full string, human readable
         ebb_version_string = ebb_version_string.split("Firmware Version ", 1)
