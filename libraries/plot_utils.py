@@ -40,6 +40,8 @@ from bezmisc import beziersplitatt
 def version():    # Version number for this document
     return "0.11" # v 0.11.0 Dated 2018-08-24
 
+__version__ = version()
+
 PX_PER_INCH = 96.0
 # This value has migrated to 96 px per inch, as of Inkscape 0.92
 # Inkscape 0.92 was released January 4, 2017.
