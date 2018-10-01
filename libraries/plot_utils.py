@@ -38,13 +38,15 @@ import simplepath
 from bezmisc import beziersplitatt
 
 def version():    # Version number for this document
-    return "0.11" # v 0.11.0 Dated 2018-08-24
+    return "0.12" # Dated 2018-09-30
 
 __version__ = version()
 
 PX_PER_INCH = 96.0
-# This value has migrated to 96 px per inch, as of Inkscape 0.92
-# Inkscape 0.92 was released January 4, 2017.
+# This value has changed to 96 px per inch, as of version 0.12 of this library.
+# Prior versions used 90 PPI, corresponding the value used in Inkscape < 0.92.
+# For use with Inkscape 0.91 (or older), use PX_PER_INCH = 90.0
+
 
 def checkLimits(value, lower_bound, upper_bound):
     # Limit a value to within a range.
