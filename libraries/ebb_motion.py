@@ -2,26 +2,26 @@
 # ebb_motion.py
 # Motion control utilities for EiBotBoard
 # https://github.com/evil-mad/plotink
-# 
-# Intended to provide some common interfaces that can be used by 
+#
+# Intended to provide some common interfaces that can be used by
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
 # See version() below for version number.
 #
 # The MIT License (MIT)
-# 
+#
 # Copyright (c) 2018 Windell H. Oskay, Evil Mad Scientist Laboratories
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -300,7 +300,7 @@ def queryEBBLV(port_name):
     # (Unrelated to our plot layers; name is an historical artifact.)
     if port_name is not None:
         value = ebb_serial.query(port_name, 'QL\r')
-        try: 
+        try:
             ret_val = int(value)
             return value
         except:
