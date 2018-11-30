@@ -193,11 +193,10 @@ def getLength(altself, name, default):
 
     if string_to_parse:
         v, u = parseLengthWithUnits(string_to_parse)
-        if not v:
-            # Couldn't parse the value
+        if v is None:
             return None
         elif u == '' or u == 'px':
-            return v
+            return float(v)
         elif u == 'in':
             return float(v) * PX_PER_INCH
         elif u == 'mm':
@@ -238,11 +237,10 @@ def getLengthInches(altself, name):
     string_to_parse = altself.document.getroot().get(name)
     if string_to_parse:
         v, u = parseLengthWithUnits(string_to_parse)
-        if not v:
-            # Couldn't parse the value
+        if v is None:
             return None
         elif u == 'in':
-            return v
+            return float(v)
         elif u == 'mm':
             return float(v) / 25.4
         elif u == 'cm':
@@ -309,11 +307,10 @@ def unitsToUserUnits(input_string):
     """
 
     v, u = parseLengthWithUnits(input_string)
-    if not v:
-        # Couldn't parse the value
+    if v is None:
         return None
     elif u == '' or u == 'px':
-        return v
+        return float(v)
     elif u == 'in':
         return float(v) * PX_PER_INCH
     elif u == 'mm':
@@ -373,10 +370,10 @@ def userUnitToUnits(distance_uu, unit_string):
     Return value in user units (typically "px").
     """
 
-    if not distance_uu:  # Couldn't parse the value
+    if distance_uu is None:  # Couldn't parse the value
         return None
     elif unit_string == '' or unit_string == 'px':
-        return distance_uu
+        return float(distance_uu)
     elif unit_string == 'in':
         return float(distance_uu) / PX_PER_INCH
     elif unit_string == 'mm':
