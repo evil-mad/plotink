@@ -6,7 +6,7 @@
 # Intended to provide some common interfaces that can be used by
 # EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
-# Version 0.13, Dated July 9, 2018.
+# See below for version information
 #
 # Thanks to Shel Michaels for bug fixes and helpful suggestions.
 #
@@ -38,8 +38,8 @@ import inkex
 from distutils.version import LooseVersion
 import serial
 
-def version():
-    return "0.12"  # Version number for this document
+def version():      # Version number for this document
+    return "0.13"   # Dated 2018-11-30
 
 
 def findPort():
