@@ -38,7 +38,7 @@ import simplepath
 from bezmisc import beziersplitatt
 
 def version():    # Version number for this document
-    return "0.12" # Dated 2018-09-30
+    return "0.13" # Dated 2018-11-30
 
 __version__ = version()
 
@@ -391,6 +391,155 @@ def userUnitToUnits(distance_uu, unit_string):
     else:
         # Unsupported units
         return None
+
+
+def vb_scale(vb, p_a_r, doc_width, doc_height):
+    """"
+    Parse SVG viewbox and generate scaling parameters.
+    Reference documentation: https://www.w3.org/TR/SVG11/coords.html
+    
+    Inputs:
+        vb:         Contents of SVG viewbox attribute
+        p_a_r:      Contents of SVG preserveAspectRatio attribute
+        doc_width:  Width of SVG document
+        doc_height: Height of SVG document
+        
+    Output: sx, sy, ox, oy
+        Scale parameters (sx,sy) and offset parameters (ox,oy)
+    
+    """
+    if vb is None:
+        return 1,1,0,0 # No viewbox; return default transform
+    else:
+        vb_array = vb.strip().replace(',', ' ').split()
+        
+        if len(vb_array) < 4:
+            return 1,1,0,0 # invalid viewbox; return default transform
+    
+        min_x =  float(vb_array[0]) # Viewbox offset: x
+        min_y =  float(vb_array[1]) # Viewbox offset: y
+        width =  float(vb_array[2]) # Viewbox width
+        height = float(vb_array[3]) # Viewbox height
+
+        if width <= 0 or height <= 0:
+            return 1,1,0,0 # invalid viewbox; return default transform
+        
+        d_width = float(doc_width)
+        d_height = float(doc_height)
+
+        if d_width <= 0 or d_height <= 0:
+            return 1,1,0,0 # invalid document size; return default transform
+
+        ar_doc = d_height / d_width # Document aspect ratio
+        ar_vb = height / width      # Viewbox aspect ratio
+        
+        # Default values of the two preserveAspectRatio parameters:
+        par_align = "xmidymid" # "align" parameter (lowercased)
+        par_mos = "meet"       # "meetOrSlice" parameter
+        
+        if p_a_r is not None:
+            par_array = p_a_r.strip().replace(',', ' ').lower().split()
+            if len(par_array) > 0:
+                par0 = par_array[0]
+                if par0 == "defer":
+                    if len(par_array) > 1:
+                        par_align = par_array[1]
+                        if len(par_array) > 2:
+                            par_mos = par_array[2]
+                else:
+                    par_align = par0
+                    if len(par_array) > 1:
+                        par_mos = par_array[1]
+
+        if par_align == "none":
+            # Scale document to fill page. Do not preserve aspect ratio.
+            # This is not default behavior, nor what happens if par_align
+            # is not given; the "none" value must be _explicitly_ specified.
+
+            sx = d_width/ width
+            sy = d_height / height
+            ox = -min_x
+            oy = -min_y
+            return sx,sy,ox,oy
+            
+        """
+        Other than "none", all situations fall into two classes:
+        
+        1)   (ar_doc >= ar_vb AND par_mos == "meet")
+               or  (ar_doc < ar_vb AND par_mos == "slice")
+            -> In these cases, scale document up until VB fills doc in X.
+        
+        2)   All other cases, i.e.,
+            (ar_doc < ar_vb AND par_mos == "meet")
+               or  (ar_doc >= ar_vb AND par_mos == "slice")
+            -> In these cases, scale document up until VB fills doc in Y.
+        
+        Note in cases where the scaled viewbox exceeds the document
+        (page) boundaries (all "slice" cases and many "meet" cases where
+        an offset value is given) that this routine does not perform 
+        any clipping, but subsequent clipping to the page boundary
+        is appropriate.
+        
+        Besides "none", there are 9 possible values of par_align:
+            xminymin xmidymin xmaxymin
+            xminymid xmidymid xmaxymid
+            xminymax xmidymax xmaxymax
+        """
+
+        if (((ar_doc >= ar_vb) and (par_mos == "meet"))
+            or ((ar_doc < ar_vb) and (par_mos == "slice"))):
+            # Case 1: Scale document up until VB fills doc in X.
+
+            sx = d_width / width
+            sy = ar_vb * sx
+            ox = -min_x
+            
+            scaled_vb_height = ar_doc * width
+            excess_height = scaled_vb_height - height
+
+            if par_align in {"xminymin", "xmidymin", "xmaxymin"}:
+                # Case: Y-Min: Align viewbox to minimum Y of the viewport.
+                oy = -min_y
+                # OK: tested with Tall-Meet, Wide-Slice
+
+            elif par_align in {"xminymax", "xmidymax", "xmaxymax"}:
+                # Case: Y-Max: Align viewbox to maximum Y of the viewport.
+                oy = -min_y + excess_height
+                #  OK: tested with Tall-Meet, Wide-Slice
+
+            else: # par_align in {"xminymid", "xmidymid", "xmaxymid"}:
+                # Default case: Y-Mid: Center viewbox on page in Y
+                oy = -min_y + excess_height / 2
+                # OK: Tested with Tall-Meet, Wide-Slice
+                
+            return sx,sy,ox,oy
+        else:
+            # Case 2: Scale document up until VB fills doc in Y.
+            
+            sy = d_height / height
+            sx = ar_vb * sy
+            oy = -min_y
+
+            scaled_vb_width = height / ar_doc
+            excess_width = scaled_vb_width - width
+
+            if par_align in {"xminymin", "xminymid", "xminymax"}:
+                # Case: X-Min: Align viewbox to minimum X of the viewport.
+                ox = -min_x 
+                # OK: Tested with Tall-Slice, Wide-Meet
+
+            elif par_align in {"xmaxymin", "xmaxymid", "xmaxymax"}:
+                # Case: X-Max: Align viewbox to maximum X of the viewport.
+                ox = -min_x + excess_width
+                # Need test: Tall-Slice, Wide-Meet
+
+            else: # par_align in {"xmidymin", "xmidymid", "xmidymax"}:
+                # Default case: X-Mid: Center viewbox on page in X
+                ox = -min_x + excess_width / 2
+                # OK: Tested with Tall-Slice, Wide-Meet
+                
+            return sx,sy,ox,oy
+    return 1,1,0,0 # Catch-all: return default transform
 
 
 def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
