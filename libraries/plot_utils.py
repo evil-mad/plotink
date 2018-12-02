@@ -491,7 +491,7 @@ def vb_scale(vb, p_a_r, doc_width, doc_height):
             # Case 1: Scale document up until VB fills doc in X.
 
             sx = d_width / width
-            sy = ar_vb * sx
+            sy = sx # Uniform aspect ratio
             ox = -min_x
             
             scaled_vb_height = ar_doc * width
@@ -517,7 +517,7 @@ def vb_scale(vb, p_a_r, doc_width, doc_height):
             # Case 2: Scale document up until VB fills doc in Y.
             
             sy = d_height / height
-            sx = ar_vb * sy
+            sx = sy # Uniform aspect ratio
             oy = -min_y
 
             scaled_vb_width = height / ar_doc
