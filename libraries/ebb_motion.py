@@ -10,7 +10,7 @@
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2018 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2019 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ import ebb_serial
 
 
 def version():  # Report version number for this document
-    return "0.16"  # Dated July 22, 2018
+    return "0.17"  # Dated January 8, 2019
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -57,17 +57,6 @@ def doTimedPause(port_name, n_pause):
                     td = 1  # don't allow zero-time moves
             ebb_serial.command(port_name, 'SM,{0},0,0\r'.format(td))
             n_pause -= td
-
-
-def doXYAccelMove(port_name, delta_x, delta_y, v_initial, v_final):
-    # Move X/Y axes as: "AM,<initial_velocity>,<final_velocity>,<axis1>,<axis2><CR>"
-    # Typically, this is wired up such that axis 1 is the Y axis and axis 2 is the X axis of motion.
-    # On EggBot, Axis 1 is the "pen" motor, and Axis 2 is the "egg" motor.
-    # Note that minimum move duration is 5 ms.
-    # Important: Requires firmware version 2.4 or higher.
-    if port_name is not None:
-        str_output = 'AM,{0},{1},{2},{3}\r'.format(v_initial, v_final, delta_x, delta_y)
-        ebb_serial.command(port_name, str_output)
 
 
 def doLowLevelMove(port_name, ri1, steps1, delta_r1, ri2, steps2, delta_r2):
