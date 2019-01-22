@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # plot_utils.py
-# Common geometric plotting utilities for EiBotBoard
+# Common plotting utilities for EiBotBoard
 # https://github.com/evil-mad/plotink
 #
 # Intended to provide some common interfaces that can be used by
@@ -11,7 +11,7 @@
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2018 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2019 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ import simplepath
 from bezmisc import beziersplitatt
 
 def version():    # Version number for this document
-    return "0.13" # Dated 2018-11-30
+    return "0.14" # Dated 2019-01-21
 
 __version__ = version()
 
@@ -47,6 +47,19 @@ PX_PER_INCH = 96.0
 # Prior versions used 90 PPI, corresponding the value used in Inkscape < 0.92.
 # For use with Inkscape 0.91 (or older), use PX_PER_INCH = 90.0
 
+trivial_svg = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+    <svg
+       xmlns:dc="http://purl.org/dc/elements/1.1/"
+       xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+       xmlns:svg="http://www.w3.org/2000/svg"
+       xmlns="http://www.w3.org/2000/svg"
+       version="1.1"
+       id="svg15158"
+       viewBox="0 0 297 210"
+       height="210mm"
+       width="297mm">
+    </svg>
+    """
 
 def checkLimits(value, lower_bound, upper_bound):
     # Limit a value to within a range.
