@@ -33,9 +33,11 @@
 
 from math import sqrt
 
-import cspsubdiv
-import simplepath
-from bezmisc import beziersplitatt
+from .utils import from_ink_extensions_import
+
+cspsubdiv = from_ink_extensions_import('cspsubdiv')
+simplepath = from_ink_extensions_import('simplepath')
+bezmisc = from_ink_extensions_import('bezmisc')
 
 def version():    # Version number for this document
     return "0.14" # Dated 2019-01-21
@@ -368,7 +370,7 @@ def subdivideCubicPath(sp, flat, i=1):
                 break
             i += 1
 
-        one, two = beziersplitatt(b, 0.5)
+        one, two = bezmisc.beziersplitatt(b, 0.5)
         sp[i - 1][2] = one[1]
         sp[i][0] = two[2]
         p = [one[2], one[3], two[1]]

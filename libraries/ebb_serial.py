@@ -34,7 +34,9 @@
 
 import gettext
 
-import inkex
+from .utils import from_ink_extensions_import
+inkex = from_ink_extensions_import('inkex')
+
 from distutils.version import LooseVersion
 import serial
 
