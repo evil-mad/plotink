@@ -34,7 +34,7 @@
 
 import gettext
 
-from axidraw_utils import from_ink_extensions_import
+from plot_utils_import import from_ink_extensions_import
 inkex = from_ink_extensions_import('inkex')
 
 from distutils.version import LooseVersion

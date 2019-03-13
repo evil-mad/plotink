@@ -33,7 +33,7 @@
 
 from math import sqrt
 
-from axidraw_utils import from_ink_extensions_import
+from plot_utils_import import from_ink_extensions_import
 
 cspsubdiv = from_ink_extensions_import('cspsubdiv')
 simplepath = from_ink_extensions_import('simplepath')
