@@ -9,8 +9,8 @@ def from_ink_extensions_import(module_name):
         # running as a module with imported inkscape extensions source
         # e.g. if you used pip/setup.py
         module = import_module("ink_extensions." + module_name)
-    except ImportError as ie:
-        if ie.message == 'No module named ink_extensions.{}'.format(module_name):
+    except (ImportError) as ie:
+        if 'ink_extensions' in str(ie):
             # if running as script, e.g. as an inkscape extension in inkscape
             module = import_module(module_name)
         else:
