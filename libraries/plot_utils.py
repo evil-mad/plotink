@@ -38,6 +38,7 @@ from plot_utils_import import from_ink_extensions_import
 cspsubdiv = from_ink_extensions_import('cspsubdiv')
 simplepath = from_ink_extensions_import('simplepath')
 bezmisc = from_ink_extensions_import('bezmisc')
+ffgeom = from_ink_extensions_import('ffgeom')
 
 def version():    # Version number for this document
     return "0.14" # Dated 2019-01-21
@@ -376,6 +377,46 @@ def subdivideCubicPath(sp, flat, i=1):
         p = [one[2], one[3], two[1]]
         sp[i:1] = [p]
 
+def max_dist_from_n_points(input):
+    """
+    Like cspsubdiv.maxdist, but it can check for distances of any number of points >= 0.
+
+    `input` is an ordered collection of points, each point specified as an x- and y-coordinate.
+    The first point and the last point define the segment we are finding distances from.
+
+    does not mutate `input`
+    """
+    assert len(input) >= 3, "There must be points (other than begin/end) to check."
+
+    points = [ffgeom.Point(point[0], point[1]) for point in input]
+    segment = ffgeom.Segment(points.pop(0), points.pop())
+
+    distances = [segment.distanceToPoint(point) for point in points]
+    return max(distances)
+
+def supersample(vertices, tolerance):
+    """
+    Given a list of vertices, remove some according to the following algorithm.
+
+    Suppose that the vertex list consists of points A, B, C, D, E, and so forth, which define segments AB, BC, CD, DE, EF, and so on.
+
+    We first test to see if vertex B can be removed, by using perpDistanceToPoint to check whether the distance between B and segment AC is less than tolerance.
+    If B can be removed, then check to see if the next vertex, C, can be removed. Both B and C can be removed if the both the distance between B and AD is less than Tolerance and the distance between C and AD is less than Tolerance. Continue removing additional vertices, so long as the perpendicular distance between every point removed and the resulting segment is less than tolerance (and the end of the vertex list is not reached).
+If B cannot be removed, then move onto vertex C, and perform the same checks, until the end of the vertex list is reached.
+    """
+    if len(vertices) <= 2: # there is nothing to delete
+        return vertices
+
+    start_index = 0 # can't remove first vertex
+    while start_index < len(vertices) - 2:
+        end_index = start_index + 2
+        # test the removal of (start_index, end_index), exclusive until we can't advance end_index
+        while (max_dist_from_n_points(vertices[start_index:end_index + 1]) < tolerance
+               and end_index < len(vertices)):
+            end_index += 1 # try removing the next vertex too
+
+        vertices[start_index + 1:end_index - 1] = [] # delete (start_index, end_index), exclusive
+        start_index += 1
 
 def userUnitToUnits(distance_uu, unit_string):
     """
