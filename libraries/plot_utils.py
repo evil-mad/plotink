@@ -41,7 +41,7 @@ bezmisc = from_ink_extensions_import('bezmisc')
 ffgeom = from_ink_extensions_import('ffgeom')
 
 def version():    # Version number for this document
-    return "0.14" # Dated 2019-01-21
+    return "0.15" # Dated 2019-04-02
 
 __version__ = version()
 
