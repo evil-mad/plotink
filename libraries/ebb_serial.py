@@ -55,7 +55,7 @@ def findPorts():
         com_ports_list = list(comports())
         ebb_ports = []
         for port in com_ports_list:
-            if port[1].startswith("EiBotBoard") or port[1].startswith("Arduino"):
+            if port[1].startswith("EiBotBoard"):
                 ebb_ports.append(port[0])  # Success; EBB found by name match.
                 break  # stop searching-- we are done.
         if ebb_ports is None:
