@@ -33,12 +33,12 @@
 
 from math import sqrt
 
-from plot_utils_import import from_ink_extensions_import
+from plot_utils_import import from_dependency_import
 
-cspsubdiv = from_ink_extensions_import('cspsubdiv')
-simplepath = from_ink_extensions_import('simplepath')
-bezmisc = from_ink_extensions_import('bezmisc')
-ffgeom = from_ink_extensions_import('ffgeom')
+cspsubdiv = from_dependency_import('ink_extensions.cspsubdiv')
+simplepath = from_dependency_import('ink_extensions.simplepath')
+bezmisc = from_dependency_import('ink_extensions.bezmisc')
+ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
     return "0.15" # Dated 2019-04-02

@@ -34,8 +34,8 @@
 
 import gettext
 
-from plot_utils_import import from_ink_extensions_import
-inkex = from_ink_extensions_import('inkex')
+from plot_utils_import import from_dependency_import
+inkex = from_dependency_import('ink_extensions.inkex')
 
 from distutils.version import LooseVersion
 import serial
