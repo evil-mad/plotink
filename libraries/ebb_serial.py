@@ -36,9 +36,9 @@ import gettext
 
 from plot_utils_import import from_dependency_import
 inkex = from_dependency_import('ink_extensions.inkex')
+serial = from_dependency_import('serial')
 
 from distutils.version import LooseVersion
-import serial
 
 def version():      # Version number for this document
     return "0.13"   # Dated 2018-11-30
