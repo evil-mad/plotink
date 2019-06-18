@@ -12,7 +12,7 @@
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2018 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2019 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -34,14 +34,18 @@
 
 import gettext
 
-from plot_utils_import import from_dependency_import
-inkex = from_dependency_import('ink_extensions.inkex')
-serial = from_dependency_import('serial')
+try:
+    from plot_utils_import import from_dependency_import
+    inkex = from_dependency_import('ink_extensions.inkex')
+    serial = from_dependency_import('serial')
+except:
+    import inkex
+    import serial
 
 from distutils.version import LooseVersion
 
 def version():      # Version number for this document
-    return "0.13"   # Dated 2018-11-30
+    return "0.14"   # Dated 2019-06-18
 
 
 def findPort():
