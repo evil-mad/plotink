@@ -33,16 +33,15 @@
 # SOFTWARE.
 
 import gettext
+import logging
 
-try:
-    from plot_utils_import import from_dependency_import
-    inkex = from_dependency_import('ink_extensions.inkex')
-    serial = from_dependency_import('serial')
-except:
-    import inkex
-    import serial
+from plot_utils_import import from_dependency_import
+inkex = from_dependency_import('ink_extensions.inkex')
+serial = from_dependency_import('serial')
 
 from distutils.version import LooseVersion
+
+logger = logging.getLogger(__name__)
 
 def version():      # Version number for this document
     return "0.14"   # Dated 2019-06-18
@@ -347,8 +346,8 @@ def query(port_name, cmd):
                     # get new response to replace null response if necessary
                     unused_response = port_name.readline()
                     n_retry_count += 1
-        except:
-            inkex.errormsg(gettext.gettext("Error reading serial data."))
+        except (serial.SerialException, IOError, RuntimeError, OSError) as err:
+            logger.error("Error reading serial data", exc_info = err)
         return response
 
 
@@ -368,14 +367,15 @@ def command(port_name, cmd):
                 pass
             else:
                 if response:
-                    inkex.errormsg('Error: Unexpected response from EBB.')
-                    inkex.errormsg('   Command: {0}'.format(cmd.strip()))
-                    inkex.errormsg('   Response: {0}'.format(response.strip()))
+                    error_msg = '\n'.join(('Unexepcted response from EBB.',
+                                           '    Command: {0}'.format(cmd.strip()),
+                                           '    Response: {0}'.format(response.strip())))
                 else:
-                    inkex.errormsg('EBB Serial Timeout after command: {0}'.format(cmd))
-        except:
+                    error_msg = 'EBB Serial Timeout after command: {0}'.format(cmd)
+                logger.error(error_msg)
+        except (serial.SerialException, IOError, RuntimeError, OSError) as err:
             if cmd.strip().lower() not in ["rb"]: # Ignore error on reboot (RB) command
-	            inkex.errormsg('Failed after command: {0}'.format(cmd))
+                logger.error('Failed after command: {0}'.format(cmd), exc_info = err)
 
 
 def bootload(port_name):

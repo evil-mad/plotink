@@ -9,3 +9,24 @@ The three library files are:
 * ebb_serial.py - Routines for communicating with the EiBotBoard by USB serial (PySerial 2.7 + required).
 * ebb_motion.py - Common commands for interacting with the robot
 * plot_utils.py - Additional helper functions for managing the plot.
+
+## Logging
+
+This library uses the standard python logging module. Suggested configurations follow.
+
+For manual command of AxiDraw, print info, warnings, and errors to stdout:
+
+```
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+```
+
+For running as an inkscape extension, print errors to inkscape's extension errors log:
+```
+import logging
+
+logging.basicConfig(level=logging.ERR,
+        format='%(message)s'),
+        filename = "~/.config/inkscape/extension-errors.log")
+```
