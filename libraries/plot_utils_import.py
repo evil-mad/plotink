@@ -15,8 +15,12 @@ def from_dependency_import(module_name):
     if os.path.isdir(DEPENDENCY_DIR):
         # running as an inkscape extension in inkscape
 
-        old_path = sys.path[0] # this should be working directory, e.g. inkscape/extensions
-        sys.path[0] = DEPENDENCY_DIR
+        sys.path.insert(0, DEPENDENCY_DIR)
+
+        if 'ink_extensions' in module_name:
+            # a special case: inkscape-provided files don't know they are
+            # in the ink_extensions module
+            sys.path.insert(0, os.path.join(DEPENDENCY_DIR, 'ink_extensions'))
 
         try:
             module = import_module(module_name)
