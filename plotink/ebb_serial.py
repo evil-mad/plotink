@@ -32,14 +32,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from distutils.version import LooseVersion
 import gettext
 import logging
 
-from plot_utils_import import from_dependency_import
+from .plot_utils_import import from_dependency_import
 inkex = from_dependency_import('ink_extensions.inkex')
 serial = from_dependency_import('serial')
-
-from distutils.version import LooseVersion
 
 logger = logging.getLogger(__name__)
 
