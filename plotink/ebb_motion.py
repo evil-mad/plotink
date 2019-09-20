@@ -31,7 +31,7 @@
 # SOFTWARE.
 
 import math
-import ebb_serial
+from . import ebb_serial
 
 
 def version():  # Report version number for this document

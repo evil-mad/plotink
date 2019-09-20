@@ -11,7 +11,7 @@ from io import open
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.txt'), encoding='utf-8') as f:
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
@@ -25,10 +25,11 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=[
-        'ink_extensions'
+        'ink_extensions',
+        'pyserial>=2.7.0', # 3.0 recommended
     ],
     extras_require={
-        'dev': [],
+        'dev': ['coverage'],
         'test': [],
     },
 )
