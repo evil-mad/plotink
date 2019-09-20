@@ -29,7 +29,7 @@ setup(
         'pyserial>=2.7.0', # 3.0 recommended
     ],
     extras_require={
-        'dev': [],
+        'dev': ['coverage'],
         'test': [],
     },
 )
