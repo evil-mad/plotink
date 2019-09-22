@@ -2,7 +2,17 @@ from importlib import import_module
 import sys
 import os
 
-# this handles importing in two major cases
+'''
+this handles importing in two major cases
+
+In one case, the program is being run as a python script/library without inkscape. Everything can proceed normally.
+
+In the other, AxiDraw's dependencies are siloed into DEPENDENCY_DIR_NAME so as not to mess with other installations/extensions/etc, and to import them, the import system has to be instructed to look in DEPENDENCY_DIR_NAME first.
+
+In packages that need to use `from_dependency_import` a file named `plot_utils_import.py` containing `from plotink.plot_utils_import import * has to be there, so that this importing mechanism is available to files in the package with `from plot_utils_import import from_dependency_import`
+
+# to think about this might be a good place to put a blanket import lxml
+'''
 
 DEPENDENCY_DIR_NAME = 'axidraw_deps'
 DEPENDENCY_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), DEPENDENCY_DIR_NAME)
@@ -18,10 +28,9 @@ def from_dependency_import(module_name):
 
         sys.path.insert(0, DEPENDENCY_DIR)
 
-        if 'ink_extensions' in module_name:
-            # a special case: inkscape-provided files don't know they are
-            # in the ink_extensions module
-            sys.path.insert(0, INK_EXTENSIONS_DIR)
+        # inkscape-provided files don't know they are
+        # in the ink_extensions module
+        sys.path.insert(0, INK_EXTENSIONS_DIR)
 
         try:
             module = import_module(module_name)
