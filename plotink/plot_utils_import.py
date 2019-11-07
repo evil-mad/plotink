@@ -15,7 +15,7 @@ In packages that need to use `from_dependency_import` a file named `plot_utils_i
 '''
 
 DEPENDENCY_DIR_NAME = 'axidraw_deps'
-DEPENDENCY_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), DEPENDENCY_DIR_NAME)
+DEPENDENCY_DIR = os.path.join(os.path.abspath(os.getcwd()), DEPENDENCY_DIR_NAME)
 INK_EXTENSIONS_DIR = os.path.join(DEPENDENCY_DIR, 'ink_extensions')
 
 def from_dependency_import(module_name):
