@@ -35,7 +35,7 @@ from . import ebb_serial
 
 
 def version():  # Report version number for this document
-    return "0.17"  # Dated January 8, 2019
+    return "0.18"  # Dated November 29, 2019
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -316,3 +316,31 @@ def queryVoltage(port_name):
             if voltage_value < 250:
                 return False
     return True
+
+
+def servo_timeout(port_name, timeout_ms, state=None):
+    # Set the EBB servo motor timeout.
+    # The EBB will cut power to the pen-lift servo motor after a given
+    # time delay since the last X/Y/Z motion command.
+    # It can also optionally set an immediate on/off state.
+    # 
+    # The time delay timeout_ms is given in ms. A value of 0 will
+    # disable the automatic power-off feature.
+    #
+    # The state parameter is given as 0 or 1, to turn off or on
+    # servo power immediately, respectively.
+    #
+    # This feature requires EBB hardware v 2.5.0 and firmware 2.6.0
+    #
+    # Reference: http://evil-mad.github.io/EggBot/ebb.html#SR
+    #
+    if port_name is not None:
+        version_status = ebb_serial.min_version(port_name,"2.6.0")
+        if not version_status:
+            return      # Unable to read version, or version is below 2.6.0.
+        else:
+            if state is None:
+                str_output = 'SR,{0}\r'.format(timeout_ms)
+            else:
+                str_output = 'SR,{0},{1}\r'.format(timeout_ms, state)
+            ebb_serial.command(port_name, str_output)
