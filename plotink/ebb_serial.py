@@ -346,7 +346,8 @@ def query(port_name, cmd):
                     unused_response = port_name.readline()
                     n_retry_count += 1
         except (serial.SerialException, IOError, RuntimeError, OSError) as err:
-            logger.error("Error reading serial data", exc_info = err)
+            logger.error("Error reading serial data")
+            logger.info("Error context:", exc_info=err)
         return response
 
 
@@ -374,7 +375,8 @@ def command(port_name, cmd):
                 logger.error(error_msg)
         except (serial.SerialException, IOError, RuntimeError, OSError) as err:
             if cmd.strip().lower() not in ["rb"]: # Ignore error on reboot (RB) command
-                logger.error('Failed after command: {0}'.format(cmd), exc_info = err)
+                logger.error('Failed after command: {0}'.format(cmd))
+                logger.info("Error context:", exc_info=err)
 
 
 def bootload(port_name):
