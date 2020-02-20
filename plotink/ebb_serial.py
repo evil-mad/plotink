@@ -405,11 +405,10 @@ def min_version(port_name, version_string):
             return None  # We haven't received a reasonable version number response.
 
         ebb_version_string = ebb_version_string.strip()  # Stripped copy, for number comparisons
-        if ebb_version_string is not "none":
-            if LooseVersion(ebb_version_string) >= LooseVersion(version_string):
-                return True
-            else:
-                return False
+        if LooseVersion(ebb_version_string) >= LooseVersion(version_string):
+            return True
+        else:
+            return False
 
 
 def queryVersion(port_name):
