@@ -294,8 +294,9 @@ def testPort(port_name):
             if str_version and str_version.startswith("EBB".encode('ascii')):
                 return serial_port
             serial_port.close()
-        except serial.SerialException:
-            pass
+        except serial.SerialException as err:
+            logger.error("Error testing serial port `{}` connection".format(port_name))
+            logger.info("Error context:", exc_info=err)
         return None
 
 
