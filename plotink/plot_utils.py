@@ -723,12 +723,17 @@ def pathdata_last_point(path):
     Input:  A path data string; the text of the 'd' attribute of an SVG path
     Output: Two floats in a list representing the x and y coordinates of the last point
     """
-
-    command, params = simplepath.parsePath(path)[-1] # parsePath splits path into segments
+    parsed_path = simplepath.parsePath(path) # parsePath splits path into segments
+    command, params = parsed_path[-1] # look at the last command to determine the last point
 
     if command.upper() == 'Z':
-        return pathdata_first_point(path)	# Trivial case
+        # find the last move command, since Z moves to the start of the last subpath
+        for command, params in reversed(parsed_path[:-1]):
+            if command == 'M':
+                return [params[0], params[1]]
 
+        # paths must have at least one moveto, so we should never get here.
+        return None
     """
     Otherwise: The last command should be in the set 'MLCQA'
         - All commands converted to absolute by parsePath.
