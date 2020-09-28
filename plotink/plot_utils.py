@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # plot_utils.py
-# Common plotting utilities for EiBotBoard
+# Common plotting utilities
 # https://github.com/evil-mad/plotink
 #
 # See below for version information
@@ -30,15 +30,14 @@
 """
 plot_utils.py
 
-Common plotting utilities for EiBotBoard
+Common plotting utilities
 https://github.com/evil-mad/plotink
 
 Intended to provide some common interfaces that can be used by
 EggBot, WaterColorBot, AxiDraw, and similar machines.
 """
 
-
-from math import sqrt
+from math import sqrt, isclose
 
 from .plot_utils_import import from_dependency_import
 cspsubdiv = from_dependency_import('ink_extensions.cspsubdiv')
@@ -603,6 +602,43 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
 
     return s_x, s_y, o_x, o_y
     # return 1, 1, 0, 0 # Catch-all: return default transform
+
+
+def points_equal(point_a, point_b):
+    """
+    Given two vertices point_a and point_b, each a 2-tuple,
+    determine if the two points are close enough to be considered "equal"
+    with a floating-point-friendly "fuzzy" comparison.
+    """
+    return isclose(point_a[0], point_b[0]) and isclose(point_a[1], point_b[1])
+
+
+def points_near(point_a, point_b, squared_tolerance):
+    """
+    Given two vertices point_a and point_b, each a 2-tuple, return True if the two
+    points are coincident to within a certain tolerance.
+
+    Arguments:
+        point_a, point_b:  Vertex (x,y), 2-tuples of floats
+        squared_tolerance: Square of maximum allowed distance between vertices
+
+    if (point_a.x - point_b.x)^2 + (point_a.y - point_b.y)^2 < tolerance^2,
+        then return True.
+    """
+    delta_x = point_a[0] - point_b[0]
+    delta_y = point_a[1] - point_b[1]
+
+    return (delta_x * delta_x + delta_y * delta_y) < squared_tolerance
+
+
+def square_dist(point_a, point_b):
+    """
+    Given two vertices point_a and point_b, each a 2-tuple,
+    return the square of the distance between them.
+    """
+    delta_x = point_a[0] - point_b[0]
+    delta_y = point_a[1] - point_b[1]
+    return delta_x * delta_x + delta_y * delta_y
 
 
 def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
