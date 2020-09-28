@@ -47,7 +47,7 @@ ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
     """Return version number of this script"""
-    return "0.17" # Dated 2020-09-29
+    return "0.18" # Dated 2020-09-29
 
 __version__ = version()
 
