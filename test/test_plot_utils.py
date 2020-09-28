@@ -235,6 +235,21 @@ class PlotUtilsTestCase(unittest.TestCase):
         point_b = (-3, 4)
         self.assertEqual(25, plot_utils.square_dist(point_a, point_b))
 
+    def test_points_near(self):
+        """ Test floating-point-friendly fuzzy vertex point comparison """
+        point_a = (5,6)
+        point_b = (point_a[0] + 1E-3, point_a[1] - 1E-3)
+        sq_tol = 0.002 ** 2
+        self.assertEqual(True, plot_utils.points_near(point_a, point_b, sq_tol))
+        sq_tol = .0005 ** 2
+        self.assertEqual(False, plot_utils.points_near(point_a, point_b, sq_tol))
+
+    def test_square_dist(self):
+        """ Test floating-point-friendly fuzzy vertex point comparison """
+        point_a = (0,0)
+        point_b = (-3,4)
+        self.assertEqual(25, plot_utils.square_dist(point_a, point_b))
+
     def test_supersample_few_vertices(self):
         """ supersample returns the list of vertices unchanged if the list is too small (<= 2) """
         vertices = [self.get_random_points(i, i) for i in range(3)] # inputs of size 1, 2, 3
