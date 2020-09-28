@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 # plot_utils.py
-# Common plotting utilities for EiBotBoard
+# Common plotting utilities
 # https://github.com/evil-mad/plotink
-#
-# Intended to provide some common interfaces that can be used by
-# EggBot, WaterColorBot, AxiDraw, and similar machines.
 #
 # See below for version information
 #
+# Copyright (c) 2020 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # The MIT License (MIT)
-#
-# Copyright (c) 2020 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +27,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from math import sqrt
+"""
+plot_utils.py
+
+Common plotting utilities
+https://github.com/evil-mad/plotink
+
+Intended to provide some common interfaces that can be used by
+EggBot, WaterColorBot, AxiDraw, and similar machines.
+"""
+
+from math import sqrt, isclose
 
 from .plot_utils_import import from_dependency_import
 cspsubdiv = from_dependency_import('ink_extensions.cspsubdiv')
@@ -40,7 +46,8 @@ bezmisc = from_dependency_import('ink_extensions.bezmisc')
 ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
-    return "0.17" # Dated 2020-09-28
+    """Return version number of this script"""
+    return "0.18" # Dated 2020-09-29
 
 __version__ = version()
 
@@ -64,8 +71,10 @@ trivial_svg = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
     """
 
 def checkLimits(value, lower_bound, upper_bound):
-    # Limit a value to within a range.
-    # Return constrained value with error boolean.
+    """
+    Limit a value to within a range.
+    Return constrained value with error boolean.
+    """
     if value > upper_bound:
         return upper_bound, True
     if value < lower_bound:
@@ -74,53 +83,52 @@ def checkLimits(value, lower_bound, upper_bound):
 
 
 def checkLimitsTol(value, lower_bound, upper_bound, tolerance):
-    # Limit a value to within a range.
-    # Return constrained value with error boolean.
-    # Allow a range of tolerance where we constrain the value without an error message.
-
+    """
+    Limit a value to within a range.
+    Return constrained value with error boolean.
+    Allow a range of tolerance where we constrain the value without an error message.
+    """
     if value > upper_bound:
         if value > (upper_bound + tolerance):
             return upper_bound, True  # Truncate & throw error
-        else:
-            return upper_bound, False  # Truncate with no error
+        return upper_bound, False  # Truncate with no error
     if value < lower_bound:
         if value < (lower_bound - tolerance):
             return lower_bound, True  # Truncate & throw error
-        else:
-            return lower_bound, False  # Truncate with no error
+        return lower_bound, False  # Truncate with no error
     return value, False  # Return original value without error
 
 
-def clip_code(x, y, x_min, x_max, y_min, y_max):
-    # Encode point position with respect to boundary box
+def clip_code(x_in, y_in, x_min, x_max, y_min, y_max):
+    """Encode point position with respect to boundary box"""
     code = 0
-    if x < x_min:
+    if x_in < x_min:
         code = 1  # Left
-    if x > x_max:
+    if x_in > x_max:
         code |= 2 # Right
-    if y < y_min:
+    if y_in < y_min:
         code |= 4 # Top
-    if y > y_max:
+    if y_in > y_max:
         code |= 8 # Bottom
     return code
 
 
 def clip_segment(segment, bounds):
     """
-    Given an input line segment [[x1,y1],[x2,y2]], as well as a
-    rectangular bounding region [[x_min,y_min],[x_max,y_max]], clip and
+    Given an input line segment [[x_1, y_1], [x_2, y_2]], as well as a
+    rectangular bounding region [[x_min, y_min], [x_max, y_max]], clip and
     keep the part of the segment within the bounding region, using the
     Cohen–Sutherland algorithm.
     Return a boolean value, "accept", indicating that the output
     segment is non-empty, as well as truncated segment,
-    [[x1',y1'],[x2',y2']], giving the portion of the input line segment
+    [[x_1', y_1'], [x_2', y_2']], giving the portion of the input line segment
     that fits within the bounds.
     """
 
-    x1 = segment[0][0]
-    y1 = segment[0][1]
-    x2 = segment[1][0]
-    y2 = segment[1][1]
+    x_1 = segment[0][0]
+    y_1 = segment[0][1]
+    x_2 = segment[1][0]
+    y_2 = segment[1][1]
 
     x_min = bounds[0][0]
     y_min = bounds[0][1]
@@ -128,8 +136,8 @@ def clip_segment(segment, bounds):
     y_max = bounds[1][1]
 
     while True: # Repeat until return
-        code_1 = clip_code(x1, y1, x_min, x_max, y_min, y_max)
-        code_2 = clip_code(x2, y2, x_min, x_max, y_min, y_max)
+        code_1 = clip_code(x_1, y_1, x_min, x_max, y_min, y_max)
+        code_2 = clip_code(x_2, y_2, x_min, x_max, y_min, y_max)
 
         # Trivial accept:
         if code_1 == 0 and code_2 == 0:
@@ -147,54 +155,55 @@ def clip_segment(segment, bounds):
         # Clip at a single boundary; may need to do this up to twice per vertex
 
         if code & 1: # Vertex on LEFT side of bounds:
-            x = x_min  # Find intersection of our segment with x_min
-            slope = (y2 - y1) / (x2 - x1)
-            y = slope * (x_min - x1) + y1
+            x_new = x_min  # Find intersection of our segment with x_min
+            slope = (y_2 - y_1) / (x_2 - x_1)
+            y_new = slope * (x_min - x_1) + y_1
 
         elif code & 2:  # Vertex on RIGHT side of bounds:
-            x = x_max # Find intersection of our segment with x_max
-            slope = (y2 - y1) / (x2 - x1)
-            y = slope * (x_max - x1) + y1
+            x_new = x_max # Find intersection of our segment with x_max
+            slope = (y_2 - y_1) / (x_2 - x_1)
+            y_new = slope * (x_max - x_1) + y_1
 
         elif code & 4: # Vertex on TOP side of bounds:
-            y = y_min  # Find intersection of our segment with y_min
-            slope = (x2 - x1) / (y2 - y1)
-            x = slope * (y_min - y1) + x1
+            y_new = y_min  # Find intersection of our segment with y_min
+            slope = (x_2 - x_1) / (y_2 - y_1)
+            x_new = slope * (y_min - y_1) + x_1
 
         elif code & 8: # Vertex on BOTTOM side of bounds:
-            y = y_max  # Find intersection of our segment with y_max
-            slope = (x2 - x1) / (y2 - y1)
-            x = slope * (y_max - y1) + x1
+            y_new = y_max  # Find intersection of our segment with y_max
+            slope = (x_2 - x_1) / (y_2 - y_1)
+            x_new = slope * (y_max - y_1) + x_1
 
         if code == code_1:
-            x1 = x
-            y1 = y
+            x_1 = x_new
+            y_1 = y_new
         else:
-            x2 = x
-            y2 = y
-        segment = [[x1,y1],[x2,y2]] # Now checking this clipped segment
+            x_2 = x_new
+            y_2 = y_new
+        segment = [[x_1, y_1], [x_2, y_2]] # Now checking this clipped segment
 
 
 def constrainLimits(value, lower_bound, upper_bound):
-    # Limit a value to within a range.
+    """ Limit a value to within a range. """
     return max(lower_bound, min(upper_bound, value))
 
 
-def distance(x, y):
+def distance(x_in, y_in):
     """
     Pythagorean theorem
     """
-    return sqrt(x * x + y * y)
+    return sqrt(x_in * x_in + y_in * y_in)
 
 
 def dotProductXY(input_vector_first, input_vector_second):
-    temp = input_vector_first[0] * input_vector_second[0] + input_vector_first[1] * input_vector_second[1]
+    """Dot product of vectors"""
+    temp = input_vector_first[0] * input_vector_second[0] +\
+                    input_vector_first[1] * input_vector_second[1]
     if temp > 1:
         return 1
-    elif temp < -1:
+    if temp < -1:
         return -1
-    else:
-        return temp
+    return temp
 
 
 def getLength(altself, name, default):
@@ -207,31 +216,29 @@ def getLength(altself, name, default):
     string_to_parse = altself.document.getroot().get(name)
 
     if string_to_parse:
-        v, u = parseLengthWithUnits(string_to_parse)
-        if v is None:
+        value, unit = parseLengthWithUnits(string_to_parse)
+        if value is None:
             return None
-        elif u == '' or u == 'px':
-            return float(v)
-        elif u == 'in':
-            return float(v) * PX_PER_INCH
-        elif u == 'mm':
-            return float(v) * PX_PER_INCH / 25.4
-        elif u == 'cm':
-            return float(v) * PX_PER_INCH / 2.54
-        elif u == 'Q' or u == 'q':
-            return float(v) * PX_PER_INCH / (40.0 * 2.54)
-        elif u == 'pc':
-            return float(v) * PX_PER_INCH / 6.0
-        elif u == 'pt':
-            return float(v) * PX_PER_INCH / 72.0
-        elif u == '%':
-            return float(default) * v / 100.0
-        else:
-            # Unsupported units
-            return None
-    else:
-        # No width specified; assume the default value
-        return float(default)
+        if unit in ('', 'px'):
+            return float(value)
+        if unit == 'in':
+            return float(value) * PX_PER_INCH
+        if unit == 'mm':
+            return float(value) * PX_PER_INCH / 25.4
+        if unit == 'cm':
+            return float(value) * PX_PER_INCH / 2.54
+        if unit in ('Q', 'q'):
+            return float(value) * PX_PER_INCH / (40.0 * 2.54)
+        if unit == 'pc':
+            return float(value) * PX_PER_INCH / 6.0
+        if unit == 'pt':
+            return float(value) * PX_PER_INCH / 72.0
+        if unit == '%':
+            return float(default) * value / 100.0
+        # Unsupported units
+        return None
+    # No width specified; assume the default value
+    return float(default)
 
 
 def getLengthInches(altself, name):
@@ -251,26 +258,25 @@ def getLengthInches(altself, name):
     """
     string_to_parse = altself.document.getroot().get(name)
     if string_to_parse:
-        v, u = parseLengthWithUnits(string_to_parse)
-        if v is None:
+        value, unit = parseLengthWithUnits(string_to_parse)
+        if value is None:
             return None
-        elif u == 'in':
-            return float(v)
-        elif u == 'mm':
-            return float(v) / 25.4
-        elif u == 'cm':
-            return float(v) / 2.54
-        elif u == 'Q' or u == 'q':
-            return float(v) / (40.0 * 2.54)
-        elif u == 'pc':
-            return float(v) / 6.0
-        elif u == 'pt':
-            return float(v) / 72.0
-        elif u == '' or u == 'px':
-            return float(v) / 96.0
-        else:
-            # Unsupported units, including '%'
-            return None
+        if unit == 'in':
+            return float(value)
+        if unit == 'mm':
+            return float(value) / 25.4
+        if unit == 'cm':
+            return float(value) / 2.54
+        if unit in ('Q', 'q'):
+            return float(value) / (40.0 * 2.54)
+        if unit == 'pc':
+            return float(value) / 6.0
+        if unit == 'pt':
+            return float(value) / 72.0
+        if unit in ('', 'px'):
+            return float(value) / 96.0
+    # Unsupported units (including '%') or no string to parse:
+    return None
 
 
 def parseLengthWithUnits(string_to_parse):
@@ -279,38 +285,38 @@ def parseLengthWithUnits(string_to_parse):
     There is a more general routine to consider in scour.py if more
     generality is ever needed.
     """
-    u = 'px'
-    s = string_to_parse.strip()
-    if s[-2:] == 'px':  # pixels, at a size of PX_PER_INCH per inch
-        s = s[:-2]
-    elif s[-2:] == 'in':  # inches
-        s = s[:-2]
-        u = 'in'
-    elif s[-2:] == 'mm':  # millimeters
-        s = s[:-2]
-        u = 'mm'
-    elif s[-2:] == 'cm':  # centimeters
-        s = s[:-2]
-        u = 'cm'
-    elif s[-2:] == 'pt':  # points; 1pt = 1/72th of 1in
-        s = s[:-2]
-        u = 'pt'
-    elif s[-2:] == 'pc':  # picas; 1pc = 1/6th of 1in
-        s = s[:-2]
-        u = 'pc'
-    elif s[-1:] == 'Q' or s[-1:] == 'q':  # quarter-millimeters. 1q = 1/40th of 1cm
-        s = s[:-1]
-        u = 'Q'
-    elif s[-1:] == '%':
-        u = '%'
-        s = s[:-1]
+    units = 'px'
+    string = string_to_parse.strip()
+    if string[-2:] == 'px':  # pixels, at a size of PX_PER_INCH per inch
+        string = string[:-2]
+    elif string[-2:] == 'in':  # inches
+        string = string[:-2]
+        units = 'in'
+    elif string[-2:] == 'mm':  # millimeters
+        string = string[:-2]
+        units = 'mm'
+    elif string[-2:] == 'cm':  # centimeters
+        string = string[:-2]
+        units = 'cm'
+    elif string[-2:] == 'pt':  # points; 1pt = 1/72th of 1in
+        string = string[:-2]
+        units = 'pt'
+    elif string[-2:] == 'pc':  # picas; 1pc = 1/6th of 1in
+        string = string[:-2]
+        units = 'pc'
+    elif string[-1:] == 'Q' or string[-1:] == 'q':  # quarter-millimeters. 1q = 1/40th of 1cm
+        string = string[:-1]
+        units = 'Q'
+    elif string[-1:] == '%':
+        units = '%'
+        string = string[:-1]
 
     try:
-        v = float(s)
-    except:
+        value = float(string)
+    except ValueError:
         return None, None
 
-    return v, u
+    return value, units
 
 
 def unitsToUserUnits(input_string):
@@ -321,31 +327,30 @@ def unitsToUserUnits(input_string):
     Return value in user units (typically "px").
     """
 
-    v, u = parseLengthWithUnits(input_string)
-    if v is None:
+    value, unit = parseLengthWithUnits(input_string)
+    if value is None:
         return None
-    elif u == '' or u == 'px':
-        return float(v)
-    elif u == 'in':
-        return float(v) * PX_PER_INCH
-    elif u == 'mm':
-        return float(v) * PX_PER_INCH / 25.4
-    elif u == 'cm':
-        return float(v) * PX_PER_INCH / 2.54
-    elif u == 'Q' or u == 'q':
-        return float(v) * PX_PER_INCH / (40.0 * 2.54)
-    elif u == 'pc':
-        return float(v) * PX_PER_INCH / 6.0
-    elif u == 'pt':
-        return float(v) * PX_PER_INCH / 72.0
-    elif u == '%':
-        return float(v) / 100.0
-    else:
-        # Unsupported units
-        return None
+    if unit in ('', 'px'):
+        return float(value)
+    if unit == 'in':
+        return float(value) * PX_PER_INCH
+    if unit == 'mm':
+        return float(value) * PX_PER_INCH / 25.4
+    if unit == 'cm':
+        return float(value) * PX_PER_INCH / 2.54
+    if unit in ('Q', 'q'):
+        return float(value) * PX_PER_INCH / (40.0 * 2.54)
+    if unit == 'pc':
+        return float(value) * PX_PER_INCH / 6.0
+    if unit == 'pt':
+        return float(value) * PX_PER_INCH / 72.0
+    if unit == '%':
+        return float(value) / 100.0
+    # Unsupported units
+    return None
 
 
-def subdivideCubicPath(sp, flat, i=1):
+def subdivideCubicPath(s_p, flat, i=1):
     """
     Break up a bezier curve into smaller curves, each of which
     is approximately a straight line within a given tolerance
@@ -357,51 +362,63 @@ def subdivideCubicPath(sp, flat, i=1):
 
     while True:
         while True:
-            if i >= len(sp):
+            if i >= len(s_p):
                 return
-            p0 = sp[i - 1][1]
-            p1 = sp[i - 1][2]
-            p2 = sp[i][0]
-            p3 = sp[i][1]
+            p_0 = s_p[i - 1][1]
+            p_1 = s_p[i - 1][2]
+            p_2 = s_p[i][0]
+            p_3 = s_p[i][1]
 
-            b = (p0, p1, p2, p3)
+            b_list = (p_0, p_1, p_2, p_3)
 
-            if cspsubdiv.maxdist(b) > flat:
+            if cspsubdiv.maxdist(b_list) > flat:
                 break
             i += 1
 
-        one, two = bezmisc.beziersplitatt(b, 0.5)
-        sp[i - 1][2] = one[1]
-        sp[i][0] = two[2]
-        p = [one[2], one[3], two[1]]
-        sp[i:1] = [p]
+        one, two = bezmisc.beziersplitatt(b_list, 0.5)
+        s_p[i - 1][2] = one[1]
+        s_p[i][0] = two[2]
+        p_list = [one[2], one[3], two[1]]
+        s_p[i:1] = [p_list]
 
-def max_dist_from_n_points(input):
+
+def max_dist_from_n_points(input_points):
     """
     Like cspsubdiv.maxdist, but it can check for distances of any number of points >= 0.
 
-    `input` is an ordered collection of points, each point specified as an x- and y-coordinate.
+    `input_points` is an ordered collection of xy vertices.
     The first point and the last point define the segment we are finding distances from.
 
-    does not mutate `input`
+    does not mutate `input_points`
     """
-    assert len(input) >= 3, "There must be points (other than begin/end) to check."
+    assert len(input_points) >= 3, "There must be points (other than begin/end) to check."
 
-    points = [ffgeom.Point(point[0], point[1]) for point in input]
+    points = [ffgeom.Point(point[0], point[1]) for point in input_points]
     segment = ffgeom.Segment(points.pop(0), points.pop())
 
     distances = [segment.distanceToPoint(point) for point in points]
     return max(distances)
 
+
 def supersample(vertices, tolerance):
     """
     Given a list of vertices, remove some according to the following algorithm.
 
-    Suppose that the vertex list consists of points A, B, C, D, E, and so forth, which define segments AB, BC, CD, DE, EF, and so on.
+    Suppose that the vertex list consists of points A, B, C, D, E, and so forth,
+    which define segments AB, BC, CD, DE, EF, and so on.
 
-    We first test to see if vertex B can be removed, by using perpDistanceToPoint to check whether the distance between B and segment AC is less than tolerance.
-    If B can be removed, then check to see if the next vertex, C, can be removed. Both B and C can be removed if the both the distance between B and AD is less than Tolerance and the distance between C and AD is less than Tolerance. Continue removing additional vertices, so long as the perpendicular distance between every point removed and the resulting segment is less than tolerance (and the end of the vertex list is not reached).
-If B cannot be removed, then move onto vertex C, and perform the same checks, until the end of the vertex list is reached.
+    We first test to see if vertex B can be removed, by using perpDistanceToPoint
+    to check whether the distance between B and segment AC is less than tolerance.
+
+    If B can be removed, then check to see if the next vertex, C, can be removed.
+    Both B and C can be removed if the both the distance between B and AD is less
+    than Tolerance and the distance between C and AD is less than Tolerance. Continue
+    removing additional vertices, so long as the perpendicular distance between every
+    point removed and the resulting segment is less than tolerance (and the end of the
+    vertex list is not reached).
+
+    If B cannot be removed, then move onto vertex C, and perform the same checks,
+    until the end of the vertex list is reached.
     """
     if len(vertices) <= 2: # there is nothing to delete
         return vertices
@@ -427,174 +444,201 @@ def userUnitToUnits(distance_uu, unit_string):
 
     if distance_uu is None:  # Couldn't parse the value
         return None
-    elif unit_string == '' or unit_string == 'px':
+    if unit_string in ('', 'px'):
         return float(distance_uu)
-    elif unit_string == 'in':
+    if unit_string == 'in':
         return float(distance_uu) / PX_PER_INCH
-    elif unit_string == 'mm':
+    if unit_string == 'mm':
         return float(distance_uu) / (PX_PER_INCH / 25.4)
-    elif unit_string == 'cm':
+    if unit_string == 'cm':
         return float(distance_uu) / (PX_PER_INCH / 2.54)
-    elif unit_string == 'Q' or unit_string == 'q':
+    if unit_string in ('Q', 'q'):
         return float(distance_uu) / (PX_PER_INCH / (40.0 * 2.54))
-    elif unit_string == 'pc':
+    if unit_string == 'pc':
         return float(distance_uu) / (PX_PER_INCH / 6.0)
-    elif unit_string == 'pt':
+    if unit_string == 'pt':
         return float(distance_uu) / (PX_PER_INCH / 72.0)
-    elif unit_string == '%':
+    if unit_string == '%':
         return float(distance_uu) * 100.0
-    else:
-        # Unsupported units
-        return None
+    # Unsupported units
+    return None
 
 
-def vb_scale(vb, p_a_r, doc_width, doc_height):
+def vb_scale(v_b, p_a_r, doc_width, doc_height):
     """"
     Parse SVG viewbox and generate scaling parameters.
     Reference documentation: https://www.w3.org/TR/SVG11/coords.html
-    
+
     Inputs:
-        vb:         Contents of SVG viewbox attribute
+        v_b:         Contents of SVG viewbox attribute
         p_a_r:      Contents of SVG preserveAspectRatio attribute
         doc_width:  Width of SVG document
         doc_height: Height of SVG document
-        
-    Output: sx, sy, ox, oy
-        Scale parameters (sx,sy) and offset parameters (ox,oy)
-    
+
+    Output: s_x, s_y, o_x, o_y
+        Scale parameters (s_x,s_y) and offset parameters (o_x,o_y)
+
     """
-    if vb is None:
-        return 1,1,0,0 # No viewbox; return default transform
-    else:
-        vb_array = vb.strip().replace(',', ' ').split()
-        
-        if len(vb_array) < 4:
-            return 1,1,0,0 # invalid viewbox; return default transform
-    
-        min_x =  float(vb_array[0]) # Viewbox offset: x
-        min_y =  float(vb_array[1]) # Viewbox offset: y
-        width =  float(vb_array[2]) # Viewbox width
-        height = float(vb_array[3]) # Viewbox height
+    if v_b is None:
+        return 1, 1, 0, 0 # No viewbox; return default transform
+    vb_array = v_b.strip().replace(',', ' ').split()
 
-        if width <= 0 or height <= 0:
-            return 1,1,0,0 # invalid viewbox; return default transform
-        
-        d_width = float(doc_width)
-        d_height = float(doc_height)
+    if len(vb_array) < 4:
+        return 1, 1, 0, 0 # invalid viewbox; return default transform
 
-        if d_width <= 0 or d_height <= 0:
-            return 1,1,0,0 # invalid document size; return default transform
+    min_x = float(vb_array[0]) # viewbox offset: x
+    min_y = float(vb_array[1]) # viewbox offset: y
+    width = float(vb_array[2]) # viewbox width
+    height = float(vb_array[3]) # viewbox height
 
-        ar_doc = d_height / d_width # Document aspect ratio
-        ar_vb = height / width      # Viewbox aspect ratio
-        
-        # Default values of the two preserveAspectRatio parameters:
-        par_align = "xmidymid" # "align" parameter (lowercased)
-        par_mos = "meet"       # "meetOrSlice" parameter
-        
-        if p_a_r is not None:
-            par_array = p_a_r.strip().replace(',', ' ').lower().split()
-            if len(par_array) > 0:
-                par0 = par_array[0]
-                if par0 == "defer":
-                    if len(par_array) > 1:
-                        par_align = par_array[1]
-                        if len(par_array) > 2:
-                            par_mos = par_array[2]
-                else:
-                    par_align = par0
-                    if len(par_array) > 1:
-                        par_mos = par_array[1]
+    if width <= 0 or height <= 0:
+        return 1, 1, 0, 0 # invalid viewbox; return default transform
 
-        if par_align == "none":
-            # Scale document to fill page. Do not preserve aspect ratio.
-            # This is not default behavior, nor what happens if par_align
-            # is not given; the "none" value must be _explicitly_ specified.
+    d_width = float(doc_width)
+    d_height = float(doc_height)
 
-            sx = d_width/ width
-            sy = d_height / height
-            ox = -min_x
-            oy = -min_y
-            return sx,sy,ox,oy
-            
-        """
-        Other than "none", all situations fall into two classes:
-        
-        1)   (ar_doc >= ar_vb AND par_mos == "meet")
-               or  (ar_doc < ar_vb AND par_mos == "slice")
-            -> In these cases, scale document up until VB fills doc in X.
-        
-        2)   All other cases, i.e.,
-            (ar_doc < ar_vb AND par_mos == "meet")
-               or  (ar_doc >= ar_vb AND par_mos == "slice")
-            -> In these cases, scale document up until VB fills doc in Y.
-        
-        Note in cases where the scaled viewbox exceeds the document
-        (page) boundaries (all "slice" cases and many "meet" cases where
-        an offset value is given) that this routine does not perform 
-        any clipping, but subsequent clipping to the page boundary
-        is appropriate.
-        
-        Besides "none", there are 9 possible values of par_align:
-            xminymin xmidymin xmaxymin
-            xminymid xmidymid xmaxymid
-            xminymax xmidymax xmaxymax
-        """
+    if d_width <= 0 or d_height <= 0:
+        return 1, 1, 0, 0 # invalid document size; return default transform
 
-        if (((ar_doc >= ar_vb) and (par_mos == "meet"))
+    ar_doc = d_height / d_width # Document aspect ratio
+    ar_vb = height / width      # viewbox aspect ratio
+
+    # Default values of the two preserveAspectRatio parameters:
+    par_align = "xmidymid" # "align" parameter (lowercased)
+    par_mos = "meet"       # "meetOrSlice" parameter
+
+    if p_a_r is not None:
+        par_array = p_a_r.strip().replace(',', ' ').lower().split()
+        if len(par_array) > 0:
+            par0 = par_array[0]
+            if par0 == "defer":
+                if len(par_array) > 1:
+                    par_align = par_array[1]
+                    if len(par_array) > 2:
+                        par_mos = par_array[2]
+            else:
+                par_align = par0
+                if len(par_array) > 1:
+                    par_mos = par_array[1]
+
+    if par_align == "none":
+        # Scale document to fill page. Do not preserve aspect ratio.
+        # This is not default behavior, nor what happens if par_align
+        # is not given; the "none" value must be _explicitly_ specified.
+
+        s_x = d_width/ width
+        s_y = d_height / height
+        o_x = -min_x
+        o_y = -min_y
+        return s_x, s_y, o_x, o_y
+
+    # Other than "none", all situations fall into two classes:
+    #
+    # 1)   (ar_doc >= ar_vb AND par_mos == "meet")
+    #        or  (ar_doc < ar_vb AND par_mos == "slice")
+    #     -> In these cases, scale document up until viewbox fills doc in X.
+    #
+    # 2)   All other cases, i.e.,
+    #     (ar_doc < ar_vb AND par_mos == "meet")
+    #        or  (ar_doc >= ar_vb AND par_mos == "slice")
+    #     -> In these cases, scale document up until viewbox fills doc in Y.
+    #
+    # Note in cases where the scaled viewbox exceeds the document
+    # (page) boundaries (all "slice" cases and many "meet" cases where
+    # an offset value is given) that this routine does not perform
+    # any clipping, but subsequent clipping to the page boundary
+    # is appropriate.
+    #
+    # Besides "none", there are 9 possible values of par_align:
+    #     xminymin xmidymin xmaxymin
+    #     xminymid xmidymid xmaxymid
+    #     xminymax xmidymax xmaxymax
+
+    if (((ar_doc >= ar_vb) and (par_mos == "meet"))
             or ((ar_doc < ar_vb) and (par_mos == "slice"))):
-            # Case 1: Scale document up until VB fills doc in X.
+        # Case 1: Scale document up until viewbox fills doc in X.
 
-            sx = d_width / width
-            sy = sx # Uniform aspect ratio
-            ox = -min_x
-            
-            scaled_vb_height = ar_doc * width
-            excess_height = scaled_vb_height - height
+        s_x = d_width / width
+        s_y = s_x # Uniform aspect ratio
+        o_x = -min_x
 
-            if par_align in {"xminymin", "xmidymin", "xmaxymin"}:
-                # Case: Y-Min: Align viewbox to minimum Y of the viewport.
-                oy = -min_y
-                # OK: tested with Tall-Meet, Wide-Slice
+        scaled_vb_height = ar_doc * width
+        excess_height = scaled_vb_height - height
 
-            elif par_align in {"xminymax", "xmidymax", "xmaxymax"}:
-                # Case: Y-Max: Align viewbox to maximum Y of the viewport.
-                oy = -min_y + excess_height
-                #  OK: tested with Tall-Meet, Wide-Slice
+        if par_align in {"xminymin", "xmidymin", "xmaxymin"}:
+            # Case: Y-Min: Align viewbox to minimum Y of the viewport.
+            o_y = -min_y
 
-            else: # par_align in {"xminymid", "xmidymid", "xmaxymid"}:
-                # Default case: Y-Mid: Center viewbox on page in Y
-                oy = -min_y + excess_height / 2
-                # OK: Tested with Tall-Meet, Wide-Slice
-                
-            return sx,sy,ox,oy
-        else:
-            # Case 2: Scale document up until VB fills doc in Y.
-            
-            sy = d_height / height
-            sx = sy # Uniform aspect ratio
-            oy = -min_y
+        elif par_align in {"xminymax", "xmidymax", "xmaxymax"}:
+            # Case: Y-Max: Align viewbox to maximum Y of the viewport.
+            o_y = -min_y + excess_height
 
-            scaled_vb_width = height / ar_doc
-            excess_width = scaled_vb_width - width
+        else: # par_align in {"xminymid", "xmidymid", "xmaxymid"}:
+            # Default case: Y-Mid: Center viewbox on page in Y
+            o_y = -min_y + excess_height / 2
 
-            if par_align in {"xminymin", "xminymid", "xminymax"}:
-                # Case: X-Min: Align viewbox to minimum X of the viewport.
-                ox = -min_x 
-                # OK: Tested with Tall-Slice, Wide-Meet
+        return s_x, s_y, o_x, o_y
 
-            elif par_align in {"xmaxymin", "xmaxymid", "xmaxymax"}:
-                # Case: X-Max: Align viewbox to maximum X of the viewport.
-                ox = -min_x + excess_width
-                # Need test: Tall-Slice, Wide-Meet
+    # Case 2: Scale document up until viewbox fills doc in Y.
 
-            else: # par_align in {"xmidymin", "xmidymid", "xmidymax"}:
-                # Default case: X-Mid: Center viewbox on page in X
-                ox = -min_x + excess_width / 2
-                # OK: Tested with Tall-Slice, Wide-Meet
-                
-            return sx,sy,ox,oy
-    return 1,1,0,0 # Catch-all: return default transform
+    s_y = d_height / height
+    s_x = s_y # Uniform aspect ratio
+    o_y = -min_y
+
+    scaled_vb_width = height / ar_doc
+    excess_width = scaled_vb_width - width
+
+    if par_align in {"xminymin", "xminymid", "xminymax"}:
+        # Case: X-Min: Align viewbox to minimum X of the viewport.
+        o_x = -min_x
+
+    elif par_align in {"xmaxymin", "xmaxymid", "xmaxymax"}:
+        # Case: X-Max: Align viewbox to maximum X of the viewport.
+        o_x = -min_x + excess_width
+
+    else: # par_align in {"xmidymin", "xmidymid", "xmidymax"}:
+        # Default case: X-Mid: Center viewbox on page in X
+        o_x = -min_x + excess_width / 2
+
+    return s_x, s_y, o_x, o_y
+    # return 1, 1, 0, 0 # Catch-all: return default transform
+
+
+def points_equal(point_a, point_b):
+    """
+    Given two vertices point_a and point_b, each a 2-tuple,
+    determine if the two points are close enough to be considered "equal"
+    with a floating-point-friendly "fuzzy" comparison.
+    """
+    return isclose(point_a[0], point_b[0]) and isclose(point_a[1], point_b[1])
+
+
+def points_near(point_a, point_b, squared_tolerance):
+    """
+    Given two vertices point_a and point_b, each a 2-tuple, return True if the two
+    points are coincident to within a certain tolerance.
+
+    Arguments:
+        point_a, point_b:  Vertex (x,y), 2-tuples of floats
+        squared_tolerance: Square of maximum allowed distance between vertices
+
+    if (point_a.x - point_b.x)^2 + (point_a.y - point_b.y)^2 < tolerance^2,
+        then return True.
+    """
+    delta_x = point_a[0] - point_b[0]
+    delta_y = point_a[1] - point_b[1]
+
+    return (delta_x * delta_x + delta_y * delta_y) < squared_tolerance
+
+
+def square_dist(point_a, point_b):
+    """
+    Given two vertices point_a and point_b, each a 2-tuple,
+    return the square of the distance between them.
+    """
+    delta_x = point_a[0] - point_b[0]
+    delta_y = point_a[1] - point_b[1]
+    return delta_x * delta_x + delta_y * delta_y
 
 
 def points_near(point_a, point_b, squared_tolerance):
@@ -643,10 +687,9 @@ def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
         is less than zero, return -1, to indicate a failure.
     """
     initial_v_squared = (v_final * v_final) - (2 * acceleration * delta_x)
-    if initial_v_squared > 0:
+    if initial_v_squared >= 0:
         return sqrt(initial_v_squared)
-    else:
-        return -1
+    return -1
 
 
 def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
@@ -666,10 +709,9 @@ def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
         is less than zero, return -1, to indicate a failure.
     """
     final_v_squared = (2 * acceleration * delta_x) + (v_initial * v_initial)
-    if final_v_squared > 0:
+    if final_v_squared >= 0:
         return sqrt(final_v_squared)
-    else:
-        return -1
+    return -1
 
 
 def pathdata_first_point(path):
@@ -680,68 +722,14 @@ def pathdata_first_point(path):
     Output: Two floats in a list representing the x and y coordinates of the first point
     """
 
-    # Path origin's default values are used to see if we have
-    # Written anything to the path_origin variable yet
-    MaxLength = len(path)
-    ix = 0
-    tempString = ''
-    x_val = ''
-    y_val = ''
-    # Check one char at a time
-    # until we have the moveTo Command
-    while ix < MaxLength:
-        if path[ix].upper() == 'M':
-            break
-        # Increment until we have M
-        ix = ix + 1
+    parsed_path = simplepath.parsePath(path) # parsePath splits path into segments
 
-    # Parse path until we reach a digit, decimal point or negative sign
-    while ix < MaxLength:
-        if(path[ix].isdigit()) or path[ix] == '.' or path[ix] == '-':
-            break
-        ix = ix + 1
+    for command, params in parsed_path:
+        if command == 'M':
+            return [params[0], params[1]]
 
-    # Add digits and decimal points to x_val
-    # Stop parsing when next character is neither a digit nor a decimal point
-    while ix < MaxLength:
-        if  (path[ix].isdigit()):
-            tempString = tempString + path[ix]
-            x_val = float(tempString )
-            ix = ix + 1
-        # If next character is a decimal place, save the decimal and continue parsing
-        # This allows for paths without leading zeros to be parsed correctly
-        elif (path[ix] == '.' or path[ix] == '-'):
-            tempString = tempString + path[ix]
-            ix = ix + 1
-        else:
-            ix = ix + 1
-            break
-
-    # Reset tempString for y coordinate
-    tempString = ''
-
-    # Parse path until we reach a digit or decimal point
-    while ix < MaxLength:
-        if(path[ix].isdigit()) or path[ix] == '.' or path[ix] == '-':
-            break
-            ix = ix + 1
-
-    # Add digits and decimal points to y_val
-    # Stop parsin when next character is neither a digit nor a decimal point
-    while ix < MaxLength:
-        if (path[ix].isdigit() ):
-            tempString = tempString + path[ix]
-            y_val = float(tempString)
-            ix = ix + 1
-        # If next character is a decimal place, save the decimal and continue parsing
-        # This allows for paths without leading zeros to be parsed correctly
-        elif (path[ix] == '.' or path[ix] == '-'):
-            tempString = tempString + path[ix]
-            ix = ix + 1
-        else:
-            ix = ix + 1
-            break
-    return [x_val,y_val]
+    # Properly constructed paths begin with a moveto ('M') command.
+    return None
 
 
 def pathdata_last_point(path):
@@ -762,18 +750,17 @@ def pathdata_last_point(path):
 
         # paths must have at least one moveto, so we should never get here.
         return None
-    """
-    Otherwise: The last command should be in the set 'MLCQA'
-        - All commands converted to absolute by parsePath.
-        - Can ignore Z (case handled)
-        - Can ignore H,V, since those are converted to L by parsePath.
-        - Can ignore S, converted to C by parsePath.
-        - Can ignore T, converted to Q by parsePath.
 
-        MLCQA: Commands all ending in (X,Y) pair.
-    """
+    # Otherwise: The last command should be in the set 'MLCQA'
+    #     - All commands converted to absolute by parsePath.
+    #     - Can ignore Z (case handled)
+    #     - Can ignore H,V, since those are converted to L by parsePath.
+    #     - Can ignore S, converted to C by parsePath.
+    #     - Can ignore T, converted to Q by parsePath.
+    #
+    #     MLCQA: Commands all ending in (X,Y) pair.
 
     x_val = params[-2] # Second to last parameter given
     y_val = params[-1] # Last parameter given
 
-    return [x_val,y_val]
+    return [x_val, y_val]
