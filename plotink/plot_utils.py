@@ -11,7 +11,7 @@
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2019 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2020 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@ bezmisc = from_dependency_import('ink_extensions.bezmisc')
 ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
-    return "0.16" # Dated 2019-06-18
+    return "0.17" # Dated 2020-09-28
 
 __version__ = version()
 
@@ -595,6 +595,34 @@ def vb_scale(vb, p_a_r, doc_width, doc_height):
                 
             return sx,sy,ox,oy
     return 1,1,0,0 # Catch-all: return default transform
+
+
+def points_near(point_a, point_b, squared_tolerance):
+    """
+    Given two vertices point_a and point_b, each a 2-tuple, return True if the two
+    points are coincident to within a certain tolerance.
+
+    Arguments:
+        point_a, point_b:  Vertex (x,y), 2-tuples of floats
+        squared_tolerance: Square of maximum allowed distance between vertices
+
+    if (point_a.x - point_b.x)^2 + (point_a.y - point_b.y)^2 < tolerance^2,
+        then return True.
+    """
+    delta_x = point_a[0] - point_b[0]
+    delta_y = point_a[1] - point_b[1]
+
+    return (delta_x * delta_x + delta_y * delta_y) < squared_tolerance
+
+
+def square_dist(point_a, point_b):
+    """
+    Given two vertices point_a and point_b, each a 2-tuple,
+    return the square of the distance between them.
+    """
+    delta_x = point_a[0] - point_b[0]
+    delta_y = point_a[1] - point_b[1]
+    return delta_x * delta_x + delta_y * delta_y
 
 
 def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
