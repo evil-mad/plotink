@@ -313,7 +313,7 @@ def parseLengthWithUnits(string_to_parse):
 
     try:
         value = float(string)
-    except:
+    except ValueError:
         return None, None
 
     return value, units
