@@ -10,7 +10,7 @@
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2019 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2020 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ from . import ebb_serial
 
 
 def version():  # Report version number for this document
-    return "0.18"  # Dated November 29, 2019
+    return "0.19"  # Dated October 31, 2020
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -85,92 +85,85 @@ def moveDistLM(rin, delta_rin, time_ticks):
     # with rate factor r, delta factor delta_r, and in a given number
     # of 40 us time_ticks. Calculation is for one axis only.
 
-    # Distance moved after n time ticks is given by (n * r + (n^2 - n)*delta_r/2) / 2^31
+    # Step distance moved after T time ticks is given by:
+    #  floor( 2 * R0 * T + delta * T^2 - 2 * delta * T)/ 2^32
 
-    n = int(time_ticks)  # Ensure that the inputs are integral.
-    r = int(rin)
-    delta_r = int(delta_rin)
-
-    if n == 0:
+    time = int(time_ticks)  # Ensure that the inputs are integral.
+    rate_r0 = int(rin)
+    delta = int(delta_rin)
+    if time == 0:
         return 0
     else:
-        np = (n * n - n) >> 1  # (n^2 - n)/2 is always an integer.
-        s = (n * r) + delta_r * np
-        s = s >> 31
-        return s
+        return (2 * rate_r0 * time + delta * time * time - 2 * delta * time) >> 32
 
 
-def moveTimeLM(ri, steps, delta_r):
-    # Calculate how long, in 40 us ISR intervals, the LM command will take to move one axis.
+def moveTimeLM(rin, steps, delta_r):
+    """
+    Calculate how long, in 40 us ISR intervals, the LM command will take to move one axis.
+    
+    First: Distance in steps moved after T time ticks is given by
+      the formula: S = floor( 2 * R * T + D * T^2 - 2 * D * T)/ 2^32
+    Use the quadratic formula to solve for possible values of time T,
+    the number of time ticks needed to travel the through distance of steps.
+    
+    As this is a floating point result, we will round down the output, and
+    then move one time step forward until we find the result.
+    """
 
-    # First: Distance in steps moved after n time ticks is given by
-    #  the formula: distance(time n) = (10 * r + (n^2 - n)*delta_r/2) / 2^31.
-    # Use the quadratic formula to solve for possible values of n,
-    # the number of time ticks needed to travel the through distance of steps.
-    # As this is a floating point result, we will round down the output, and
-    # then move one time step forward until we find the result.
-
-    r = float(ri)
-    d = float(delta_r)
-    steps = abs(steps)  # Distance to move is absolute value of steps.
+    steps = abs(steps)
+    rate = float(rin)
+    delta = float(delta_r)
 
     if steps == 0:
         return 0  # No steps to take, so takes zero time.
 
     if delta_r == 0:
-        if ri == 0:
-            return 0  # No move will be made if ri and delta_r are both zero.
+        if rin == 0:
+            return 0  # No move will be made if rin and delta_r are both zero.
 
-        # Else, case of no acceleration.
-        # Simple to get actual movement time:
-        # T (seconds) = (AxisSteps << 31)/(25 kHz * RateTerm)
+        # Case of no acceleration: Simple to get actual movement time, since
+        # Steps = floor(rate * Time / 2^31)
+        # Thus, Time = ceil(Steps * 2^31 / rate)
 
         f = int(steps) << 31
-        t = f / r
-        t2 = int(math.ceil(t))
-        return t2
+        return int(math.ceil(f / r))
+
+    # Otherwise, delta_r is not zero.
+
+    # Solve quadratic for T
+    # S = floor( 2 * R * T + D * T^2 - 2 * D * T)/ 2^32
+    # -> (1/2)D T^2 + (R - D)T + )- 2^31 S = 0
+    # a = D/2
+    # b = R-D
+    # c = -2^31 S
+    #
+    # T = (-b +/- sqrt(b^2 - 4 a c)) / 2 a
+    
+    # factors:
+    a_fact = delta / 2.0
+    b_fact = rate - delta
+    c_fact = -2147483648.0 * steps
+    
+    root_factor = b_fact * b_fact - 4 * a_fact * c_fact
+
+    if root_factor < 0:
+        root_factor = 0
+    root = math.sqrt(root_factor)
+
+    result1 = int(math.ceil((- b_fact + root) / delta))
+    result2 = int(math.ceil((- b_fact - root) / delta))
+
+    if result1 < 0 and result2 < 0:
+        return -1  # No plausible roots; movement time must be positive
+
+    if result1 < 0:
+        time_ticks = result2  # Pick the positive root
+    elif result2 < 0:
+        time_ticks = result1  # Pick the positive root
+    elif result2 < result1:  # If both are valid, pick the smaller value.
+        time_ticks = result2
     else:
-        factor1 = (d / 2.0) - r
-        factor2 = r * r - d * r + (d * d / 4.0) + (2 * d * 2147483648.0 * steps)
-
-        if factor2 < 0:
-            factor2 = 0
-        factor2 = math.sqrt(factor2)
-        root1 = int(math.floor((factor1 + factor2) / d))
-        root2 = int(math.floor((factor1 - factor2) / d))
-
-    if root1 < 0 and root2 < 0:
-        return -1  # No plausible roots -- movement time must be greater than zero.
-
-    if root1 < 0:
-        time_ticks = root2  # Pick the positive root
-    elif root2 < 0:
-        time_ticks = root1  # Pick the positive root
-    elif root2 < root1:  # If both are valid, pick the smaller value.
-        time_ticks = root2
-    else:
-        time_ticks = root1
-
-    # Now that we have an floor estimate for the time:
-    # calculate how many steps occur in the estimated time.
-    # Then, using that head start, calculate the
-    # exact number of time ticks needed.
-
-    dist = 0
-    continue_loop = True
-    while continue_loop:
-        time_ticks += 1
-
-        dist = moveDistLM(ri, delta_r, time_ticks)
-
-        if 0 < dist < steps:
-            pass
-        else:
-            continue_loop = False
-
-    if dist == 0:
-        time_ticks = 0
-
+        time_ticks = result1
     return time_ticks
 
 
