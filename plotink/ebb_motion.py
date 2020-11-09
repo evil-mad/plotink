@@ -108,7 +108,7 @@ def moveDistLM(rate_in, accel_in, time_ticks):
     accel = int(accel_in)
     if time == 0:
         return 0
-    return (2 * rate_r0 * time + accel * time * time ) >> 32
+    return (2 * rate_r0 * time + accel * time * time) >> 32
 
 
 def moveTimeLM(rate_in, steps, accel_in):
@@ -200,12 +200,10 @@ def QueryPRGButton(port_name):
         return ebb_serial.query(port_name, 'QB\r')
     return None
 
-
 def sendDisableMotors(port_name):
     """ Disable stepper motors with EM command """
     if port_name is not None:
         ebb_serial.command(port_name, 'EM,0,0\r')
-    return None
 
 
 def sendEnableMotors(port_name, res):
