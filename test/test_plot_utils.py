@@ -11,6 +11,7 @@ import random
 import math
 
 from plotink import plot_utils
+from plotink import ebb_motion
 
 from plotink.plot_utils_import import from_dependency_import
 
@@ -340,6 +341,16 @@ class PlotUtilsTestCase(unittest.TestCase):
         x_out, y_out = plot_utils.pathdata_last_point(path_g)
         self.assertEqual(x_out, 0.88488738)
         self.assertEqual(y_out, 1.0288149)
+
+    def test_moveTimeLM(self):
+        """ Test moveTimeLM function """
+
+        move_time = ebb_motion.moveTimeLM(412361511,1119,-35357)
+        self.assertEqual(move_time, 11362)
+
+        move_time = ebb_motion.moveTimeLM(47141172,4478,141428)
+        self.assertEqual(move_time, 11333)
+
 
     @staticmethod
     def get_random_points(num, seed=0):
