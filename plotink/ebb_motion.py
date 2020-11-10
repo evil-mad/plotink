@@ -99,7 +99,7 @@ def doXYMove(port_name, delta_x, delta_y, duration):
 def moveDistLM(rate_in, accel_in, time_ticks):
     '''
     Calculate the number of motor steps taken using the LM command,
-    with rate factor r, delta factor accel_in, and in a given number
+    with rate factor r, acceleration accel_in, and in a given number
     of 40 us time_ticks. Calculation is for one axis only.
     Step distance moved after T time ticks is given by:
         S = floor(( 2 * R * T + A * T^2 )/ 2^32 )
