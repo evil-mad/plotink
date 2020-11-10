@@ -344,13 +344,17 @@ class PlotUtilsTestCase(unittest.TestCase):
 
     def test_moveTimeLM(self):
         """ Test moveTimeLM function """
-
         move_time = ebb_motion.moveTimeLM(412361511,1119,-35357)
         self.assertEqual(move_time, 11362)
-
         move_time = ebb_motion.moveTimeLM(47141172,4478,141428)
         self.assertEqual(move_time, 11333)
 
+    def test_moveDistLM(self):
+        """ Test moveDistLM function """
+        move_dist = ebb_motion.moveDistLM(412361511, -35357, 11362) # 1119
+        self.assertEqual(move_dist, 1119)
+        move_dist = ebb_motion.moveDistLM(47141172, 141428, 11333) #4478 
+        self.assertEqual(move_dist, 4478)
 
     @staticmethod
     def get_random_points(num, seed=0):
