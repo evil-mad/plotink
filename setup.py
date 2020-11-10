@@ -23,6 +23,15 @@ setup(
     url='https://github.com/evil-mad/plotink',
     author='Evil Mad Scientist Laboratories',
     author_email='contact@evilmadscientist.com',
+    description="Helper routines for use with plotters",
+    classifiers=[
+        "Programming Language :: Python :: 3 :: Only",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Development Status :: 5 - Production/Stable",
+        "Natural Language :: English",
+        "Intended Audience :: Developers",
+    ],
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=[
