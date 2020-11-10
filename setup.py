@@ -36,7 +36,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=[
         'ink_extensions',
-        'pyserial>=3.5b0',
+        'pyserial==3.5b0',
     ],
     extras_require={
         'dev': ['coverage'],
