@@ -11,6 +11,7 @@ import random
 import math
 
 from plotink import plot_utils
+from plotink import ebb_motion
 
 from plotink.plot_utils_import import from_dependency_import
 
@@ -235,21 +236,6 @@ class PlotUtilsTestCase(unittest.TestCase):
         point_b = (-3, 4)
         self.assertEqual(25, plot_utils.square_dist(point_a, point_b))
 
-    def test_points_near(self):
-        """ Test floating-point-friendly fuzzy vertex point comparison """
-        point_a = (5,6)
-        point_b = (point_a[0] + 1E-3, point_a[1] - 1E-3)
-        sq_tol = 0.002 ** 2
-        self.assertEqual(True, plot_utils.points_near(point_a, point_b, sq_tol))
-        sq_tol = .0005 ** 2
-        self.assertEqual(False, plot_utils.points_near(point_a, point_b, sq_tol))
-
-    def test_square_dist(self):
-        """ Test floating-point-friendly fuzzy vertex point comparison """
-        point_a = (0,0)
-        point_b = (-3,4)
-        self.assertEqual(25, plot_utils.square_dist(point_a, point_b))
-
     def test_supersample_few_vertices(self):
         """ supersample returns the list of vertices unchanged if the list is too small (<= 2) """
         vertices = [self.get_random_points(i, i) for i in range(3)] # inputs of size 1, 2, 3
@@ -355,6 +341,20 @@ class PlotUtilsTestCase(unittest.TestCase):
         x_out, y_out = plot_utils.pathdata_last_point(path_g)
         self.assertEqual(x_out, 0.88488738)
         self.assertEqual(y_out, 1.0288149)
+
+    def test_moveTimeLM(self):
+        """ Test moveTimeLM function """
+        move_time = ebb_motion.moveTimeLM(412361511,1119,-35357)
+        self.assertEqual(move_time, 11362)
+        move_time = ebb_motion.moveTimeLM(47141172,4478,141428)
+        self.assertEqual(move_time, 11333)
+
+    def test_moveDistLM(self):
+        """ Test moveDistLM function """
+        move_dist = ebb_motion.moveDistLM(412361511, -35357, 11362) # 1119
+        self.assertEqual(move_dist, 1119)
+        move_dist = ebb_motion.moveDistLM(47141172, 141428, 11333) #4478 
+        self.assertEqual(move_dist, 4478)
 
     @staticmethod
     def get_random_points(num, seed=0):

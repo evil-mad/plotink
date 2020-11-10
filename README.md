@@ -1,5 +1,5 @@
 # plotink
-Helper routines for Inkscape extensions to drive EggBot, WaterColorBot, AxiDraw, and similar plotter-type machines.
+Python helper routines for driving AxiDraw, EggBot, WaterColorBot, and similar plotter-based machines.
 
 Source code and issue tracker are hosted [at github](https://github.com/evil-mad/plotink).
 
@@ -17,8 +17,8 @@ These library files are intended to provide a single place to edit routines that
 
 The library files are:
 
-* ebb_serial.py - Routines for communicating with the EiBotBoard by USB serial (PySerial 2.7 + required).
-* ebb_motion.py - Common commands for interacting with the robot
+* ebb_serial.py - General routines for communicating with the EiBotBoard by USB serial.
+* ebb_motion.py - Motion-related routines for interacting with the robot.
 * plot_utils.py - Additional helper functions for managing the plot.
 
 
@@ -27,7 +27,6 @@ The library files are:
 New versions, starting with Plotink version 1.1.0 (September 2020), require python 3.5 or newer.
 
 A previous release, [Plotink version 1.0.1](https://pypi.org/project/plotink/1.0.1/), supports python 2.7 as well.
-
 
 ## Logging
 
