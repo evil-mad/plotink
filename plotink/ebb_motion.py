@@ -65,19 +65,23 @@ def doTimedPause(port_name, n_pause):
             n_pause -= time_delay
 
 
-def doLowLevelMove(port_name, ri1, steps1, delta_r1, ri2, steps2, delta_r2):
+def doLowLevelMove(port_name, rate1, steps1, accel1, rate2, steps2, accel2, clear=None):
     '''
     Execute a "pre-computed" 2D movement of the form
-      "LM,RateTerm1,AxisSteps1,DeltaR1,RateTerm2,AxisSteps2,DeltaR2<CR>"
+      "LM,Rate1,Steps1,Accel1,Rate2,Steps2,Accel2[,Clear]<CR>"
       See http://evil-mad.github.io/EggBot/ebb.html#LM for documentation.
-      Important: Requires firmware version 2.5.3 or higher.
+    Requires firmware version 2.7.0 or higher for proper operation
     '''
     if port_name is not None:
-        if ((ri1 == 0 and delta_r1 == 0) or steps1 == 0) and\
-                ((ri2 == 0 and delta_r2 == 0) or steps2 == 0):
-            return
-        str_output = 'LM,{0},{1},{2},{3},{4},{5}\r'.format(ri1,\
-                                steps1, delta_r1, ri2, steps2, delta_r2)
+        if ((rate1 == 0 and accel1 == 0) or steps1 == 0) and\
+                ((rate2 == 0 and accel2 == 0) or steps2 == 0):
+            return # No steps to take on either axis
+        if clear:
+            str_output = 'LM,{0},{1},{2},{3},{4},{5},{6}\r'.format(rate1,\
+                                    steps1, accel1, rate2, steps2, accel2, clear)
+        else:
+            str_output = 'LM,{0},{1},{2},{3},{4},{5}\r'.format(rate1,\
+                                steps1, accel1, rate2, steps2, accel2)
         ebb_serial.command(port_name, str_output)
 
 
@@ -321,7 +325,7 @@ def queryEBBLV(port_name):
         value = ebb_serial.query(port_name, 'QL\r')
         try:
             ret_val = int(value)
-            return value
+            return ret_val
         except:
             return None
     return None
