@@ -38,7 +38,7 @@ from . import ebb_serial
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.19"  # Dated October 31, 2020
+    return "0.20"  # Dated November 14, 2020
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -113,6 +113,38 @@ def moveDistLM(rate_in, accel_in, time_ticks):
     if time == 0:
         return 0
     return (2 * rate_r0 * time + accel * time * time) >> 32
+
+
+def moveDistLMA(rate_in, accel_in, time_ticks, accum_in):
+    '''
+    Calculate motor step count and final accumulator "remainder"
+    after a certain number of time ticks, using the LM or LT
+    command. Calculation is for one axis only.
+
+    Inputs: Rate factor rate_in, acceleration accel_in, initial
+    accumulator value accum_in, and 40 us intervals time_ticks.
+
+    Accumulator value T time ticks is given by:
+        Accum = R * T + 0.5 * accel_in * T^2 + accum_in
+        Steps = floor (Accum / 2^31)
+        Remainder = Accum - 2^31 * Steps
+
+    Return Steps, Remainder
+    This calculation is valid for version 2.7+ of the EBB firmware.
+    '''
+    time = int(time_ticks)  # Ensure that the inputs are integral.
+    rate_r0 = int(rate_in)
+    accel = int(accel_in)
+    accum_0 = int(accum_in)
+    if time == 0:
+        return 0, 0
+
+    # TWICE the accumulator value, before dividing:
+    accum_end = (2 * accum_0 + 2 * rate_r0 * time + accel * time * time) >> 1
+    step_count = accum_end >> 31
+    rems = (accum_end) - (step_count << 31)
+
+    return step_count, rems
 
 
 def moveTimeLM(rate_in, steps, accel_in):
