@@ -269,19 +269,73 @@ def sendDisableMotors(port_name):
 
 
 def sendEnableMotors(port_name, res):
-    """ Enable motors with EM command at selected resolution. """
+    """
+    Enable both motors with EM command at selected resolution.
+        If res == 0, -> Motor disabled
+        If res == 1, -> 16X microstepping
+        If res == 2, -> 8X microstepping
+        If res == 3, -> 4X microstepping
+        If res == 4, -> 2X microstepping
+        If res == 5, -> No microstepping
+    """
     if res < 0:
         res = 0
     if res > 5:
         res = 5
     if port_name is not None:
         ebb_serial.command(port_name, 'EM,{0},{0}\r'.format(res))
-        # If res == 0, -> Motor disabled
-        # If res == 1, -> 16X microstepping
-        # If res == 2, -> 8X microstepping
-        # If res == 3, -> 4X microstepping
-        # If res == 4, -> 2X microstepping
-        # If res == 5, -> No microstepping
+
+def QueryEnableMotors(port_name):
+    """
+    Read current state of motors and their resolution.
+    Returns: res_1, res_2
+        These are formatted the same way as the EM command
+
+        If res_x == 0, -> Motor disabled
+        If res_x == 1, -> 16X microstepping
+        If res_x == 2, -> 8X microstepping
+        If res_x == 3, -> 4X microstepping
+        If res_x == 4, -> 2X microstepping
+        If res_x == 5, -> No microstepping
+
+    This query uses PI ( http://evil-mad.github.io/EggBot/ebb.html#PI )
+    to read the output state of the I/O pins that control the motor
+    driver ICs
+    """
+    if port_name is not None:
+        try:
+            result = ebb_serial.query(port_name, 'PI,E,0\r') # Read motor 1 enable pin
+            enable_1 = result.split("PI,")[1].strip() == "1"
+            result = ebb_serial.query(port_name, 'PI,C,1\r') # Read motor 2 enable pin
+            enable_2 = result.split("PI,")[1].strip() == "1"
+            result = ebb_serial.query(port_name, 'PI,E,2\r') # Read MS1
+            ms_1 = result.split("PI,")[1].strip() == "1"
+            result = ebb_serial.query(port_name, 'PI,E,1\r') # Read MS2
+            ms_2 = result.split("PI,")[1].strip() == "1"
+            result = ebb_serial.query(port_name, 'PI,A,6\r') # Read MS3
+            ms_3 = result.split("PI,")[1].strip() == "1"
+
+            if ms_1 and ms_2 and ms_3:
+                res_1 = 1 # 16X microstepping
+            elif ms_1 and ms_2:
+                res_1 = 2 # 8X microstepping
+            elif ms_2:
+                res_1 = 3 # 4X microstepping
+            elif ms_1:
+                res_1 = 4 # 2X microstepping
+            else:
+                res_1 = 5 # 2X microstepping
+
+            res_2 = res_1
+            if not enable_1:
+                res_1 = 0
+            if not enable_2:
+                res_2 = 0
+
+            return res_1, res_2
+        except:
+            return None, None
+    return None, None
 
 
 def sendPenDown(port_name, pen_delay, pin=None):
