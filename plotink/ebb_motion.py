@@ -12,7 +12,7 @@ See version() below for version number.
 
 The MIT License (MIT)
 
-Copyright (c) 2020 Windell H. Oskay, Evil Mad Scientist Laboratories
+Copyright (c) 2021 Windell H. Oskay, Evil Mad Scientist Laboratories
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ from . import ebb_serial
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.20"  # Dated November 14, 2020
+    return "0.21"  # Dated April 20, 2021
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -68,7 +68,7 @@ def doTimedPause(port_name, n_pause):
 def doLowLevelMove(port_name, rate1, steps1, accel1, rate2, steps2, accel2, clear=None):
     '''
     Execute a "pre-computed" 2D movement of the form
-      "LM,Rate1,Steps1,Accel1,Rate2,Steps2,Accel2[,Clear]<CR>"
+      "LM,<Rate1>,<Steps1>,<Accel1>,<Rate2>,<Steps2>,<Accel2>[,Clear]<CR>"
       See http://evil-mad.github.io/EggBot/ebb.html#LM for documentation.
     Requires firmware version 2.7.0 or higher for proper operation
     '''
@@ -93,6 +93,32 @@ def doXYMove(port_name, delta_x, delta_y, duration):
     '''
     if port_name is not None:
         str_output = 'SM,{0},{1},{2}\r'.format(duration, delta_y, delta_x)
+        ebb_serial.command(port_name, str_output)
+
+
+def doAbsMove(port_name, rate, position1=None, position2=None):
+    '''
+    Absolute XY or homing move as: "HM,<rate>[,<position1>,<position2>]<CR>"
+        See http://evil-mad.github.io/EggBot/ebb.html#HM for more information
+
+    This is an "absolute" move, to a position relative to where the motors
+    were enabled. It is not necessarily a move in a straight line.
+    If both position1 and position2 are given, then move to the given position.
+    Otherwise, return to the position where the motors were enabled.
+    
+    This command requires firmware version 2.6.2 or newer for moves to
+    the starting position, or firmware 2.7.0 or newer for moves that
+    specify an XY position.
+    
+    This command DOES NOT perform a firmware version check. Use (e.g.)
+        ebb_serial.min_version(port_name, "2.6.2") or
+        ebb_serial.min_version(port_name, "2.7.0") if necessary.
+    '''
+    if port_name is not None:
+        if position1 and position2:
+            str_output = 'HM,{0},{1},{2}\r'.format(rate, position1, position2)
+        else:
+            str_output = 'HM,{0}\r'.format(rate)
         ebb_serial.command(port_name, str_output)
 
 
@@ -243,34 +269,99 @@ def sendDisableMotors(port_name):
 
 
 def sendEnableMotors(port_name, res):
-    """ Enable motors with EM command at selected resolution. """
+    """
+    Enable both motors with EM command at selected resolution.
+        If res == 0, -> Motor disabled
+        If res == 1, -> 16X microstepping
+        If res == 2, -> 8X microstepping
+        If res == 3, -> 4X microstepping
+        If res == 4, -> 2X microstepping
+        If res == 5, -> No microstepping
+    """
     if res < 0:
         res = 0
     if res > 5:
         res = 5
     if port_name is not None:
         ebb_serial.command(port_name, 'EM,{0},{0}\r'.format(res))
-        # If res == 0, -> Motor disabled
-        # If res == 1, -> 16X microstepping
-        # If res == 2, -> 8X microstepping
-        # If res == 3, -> 4X microstepping
-        # If res == 4, -> 2X microstepping
-        # If res == 5, -> No microstepping
 
+def QueryEnableMotors(port_name):
+    """
+    Read current state of motors and their resolution.
+    Returns: res_1, res_2
+        These are formatted the same way as the EM command
 
-def sendPenDown(port_name, pen_delay):
-    """ Lower pen with SP command """
+        If res_x == 0, -> Motor disabled
+        If res_x == 1, -> 16X microstepping
+        If res_x == 2, -> 8X microstepping
+        If res_x == 3, -> 4X microstepping
+        If res_x == 4, -> 2X microstepping
+        If res_x == 5, -> No microstepping
+
+    This query uses PI ( http://evil-mad.github.io/EggBot/ebb.html#PI )
+    to read the output state of the I/O pins that control the motor
+    driver ICs
+    """
     if port_name is not None:
-        str_output = 'SP,0,{0}\r'.format(pen_delay)
+        try:
+            result = ebb_serial.query(port_name, 'PI,E,0\r') # Read motor 1 enable pin
+            enable_1 = result.split("PI,")[1].strip() == "1"
+            result = ebb_serial.query(port_name, 'PI,C,1\r') # Read motor 2 enable pin
+            enable_2 = result.split("PI,")[1].strip() == "1"
+            result = ebb_serial.query(port_name, 'PI,E,2\r') # Read MS1
+            ms_1 = result.split("PI,")[1].strip() == "1"
+            result = ebb_serial.query(port_name, 'PI,E,1\r') # Read MS2
+            ms_2 = result.split("PI,")[1].strip() == "1"
+            result = ebb_serial.query(port_name, 'PI,A,6\r') # Read MS3
+            ms_3 = result.split("PI,")[1].strip() == "1"
+
+            if ms_1 and ms_2 and ms_3:
+                res_1 = 1 # 16X microstepping
+            elif ms_1 and ms_2:
+                res_1 = 2 # 8X microstepping
+            elif ms_2:
+                res_1 = 3 # 4X microstepping
+            elif ms_1:
+                res_1 = 4 # 2X microstepping
+            else:
+                res_1 = 5 # 2X microstepping
+
+            res_2 = res_1
+            if not enable_1:
+                res_1 = 0
+            if not enable_2:
+                res_2 = 0
+
+            return res_1, res_2
+        except:
+            return None, None
+    return None, None
+
+
+def sendPenDown(port_name, pen_delay, pin=None):
+    """
+    Lower pen with SP command
+    Optionally, specify which pin to use
+    """
+    if port_name is not None:
+        if pin:
+            str_output = 'SP,0,{},{}\r'.format(pen_delay, pin)
+        else:
+            str_output = 'SP,0,{}\r'.format(pen_delay)
         ebb_serial.command(port_name, str_output)
 
 
-def sendPenUp(port_name, pen_delay):
-    """ Raise pen with SP command """
+def sendPenUp(port_name, pen_delay, pin=None):
+    """
+    Raise pen with SP command
+    Optionally, specify which pin to use
+    """
     if port_name is not None:
-        str_output = 'SP,1,{0}\r'.format(pen_delay)
+        if pin:
+            str_output = 'SP,1,{},{}\r'.format(pen_delay, pin)
+        else:
+            str_output = 'SP,1,{0}\r'.format(pen_delay)
         ebb_serial.command(port_name, str_output)
-
 
 def PBOutConfig(port_name, pin, state):
     """

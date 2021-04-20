@@ -12,7 +12,7 @@
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2019 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2021 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ serial = from_dependency_import('serial')
 logger = logging.getLogger(__name__)
 
 def version():      # Version number for this document
-    return "0.14"   # Dated 2019-06-18
+    return "0.15"   # Dated 2021-04-20
 
 
 def findPort():
@@ -337,7 +337,7 @@ def query(port_name, cmd):
                 # get new response to replace null response if necessary
                 response = port_name.readline()
                 n_retry_count += 1
-            if cmd.strip().lower() not in ["v", "i", "a", "mr", "pi", "qm"]:
+            if cmd.split(",")[0].strip().lower() not in ["v", "i", "a", "mr", "pi", "qm"]:
                 # Most queries return an "OK" after the data requested.
                 # We skip this for those few queries that do not return an extra line.
                 unused_response = port_name.readline()  # read in extra blank/OK line
