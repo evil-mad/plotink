@@ -115,7 +115,7 @@ def doAbsMove(port_name, rate, position1=None, position2=None):
         ebb_serial.min_version(port_name, "2.7.0") if necessary.
     '''
     if port_name is not None:
-        if position1 and position1:
+        if position1 and position2:
             str_output = 'HM,{0},{1},{2}\r'.format(rate, position1, position2)
         else:
             str_output = 'HM,{0}\r'.format(rate)
