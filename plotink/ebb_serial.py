@@ -368,7 +368,7 @@ def command(port_name, cmd):
                 pass
             else:
                 if response:
-                    error_msg = '\n'.join(('Unexepcted response from EBB.',
+                    error_msg = '\n'.join(('Unexpected response from EBB.',
                                            '    Command: {0}'.format(cmd.strip()),
                                            '    Response: {0}'.format(response.strip())))
                 else:
