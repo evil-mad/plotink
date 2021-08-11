@@ -5,7 +5,7 @@
 #
 # See below for version information
 #
-# Copyright (c) 2020 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2021 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # The MIT License (MIT)
 #
@@ -47,7 +47,7 @@ ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
     """Return version number of this script"""
-    return "0.18" # Dated 2020-09-29
+    return "0.19" # Dated 2021-08-11
 
 __version__ = version()
 
@@ -97,6 +97,26 @@ def checkLimitsTol(value, lower_bound, upper_bound, tolerance):
             return lower_bound, True  # Truncate & throw error
         return lower_bound, False  # Truncate with no error
     return value, False  # Return original value without error
+
+
+def point_in_bounds(point, bounds, tolerance=1e-9):
+    """
+    Given an input point [x, y], a rectangular bounding region
+    [[x_min, y_min], [x_max, y_max]], and an optional tolerance,
+    return True if the point is within the bounds, to within the
+    required tolerance, and False otherwise.
+    """
+    x, y = point
+    [[x_min, y_min], [x_max, y_max]] = bounds
+    if x < x_min - tolerance:
+        return False
+    if y < y_min - tolerance:
+        return False
+    if x > x_max + tolerance:
+        return False
+    if y > y_max + tolerance:
+        return False
+    return True
 
 
 def clip_code(x_in, y_in, x_min, x_max, y_min, y_max):
@@ -611,34 +631,6 @@ def points_equal(point_a, point_b):
     with a floating-point-friendly "fuzzy" comparison.
     """
     return isclose(point_a[0], point_b[0]) and isclose(point_a[1], point_b[1])
-
-
-def points_near(point_a, point_b, squared_tolerance):
-    """
-    Given two vertices point_a and point_b, each a 2-tuple, return True if the two
-    points are coincident to within a certain tolerance.
-
-    Arguments:
-        point_a, point_b:  Vertex (x,y), 2-tuples of floats
-        squared_tolerance: Square of maximum allowed distance between vertices
-
-    if (point_a.x - point_b.x)^2 + (point_a.y - point_b.y)^2 < tolerance^2,
-        then return True.
-    """
-    delta_x = point_a[0] - point_b[0]
-    delta_y = point_a[1] - point_b[1]
-
-    return (delta_x * delta_x + delta_y * delta_y) < squared_tolerance
-
-
-def square_dist(point_a, point_b):
-    """
-    Given two vertices point_a and point_b, each a 2-tuple,
-    return the square of the distance between them.
-    """
-    delta_x = point_a[0] - point_b[0]
-    delta_y = point_a[1] - point_b[1]
-    return delta_x * delta_x + delta_y * delta_y
 
 
 def points_near(point_a, point_b, squared_tolerance):
