@@ -230,6 +230,30 @@ class PlotUtilsTestCase(unittest.TestCase):
         sq_tol = .0005 ** 2
         self.assertFalse(plot_utils.points_near(point_a, point_b, sq_tol))
 
+    def test_points_near(self):
+        """ Test analysis of point inside bounds """
+        point_a = (-1, 6)
+        point_b = (5, -6)
+        point_c = (-5, -6)
+        point_d = (5, 6)
+        point_e = (-1E-11, 6)
+        point_f = (3, 10 + 1E-8)
+        bounds_a = [[0, 0], [10, 10]]
+        self.assertFalse(plot_utils.point_in_bounds(point_a, bounds_a))
+        self.assertFalse(plot_utils.point_in_bounds(point_b, bounds_a))
+        self.assertFalse(plot_utils.point_in_bounds(point_c, bounds_a))
+        self.assertTrue(plot_utils.point_in_bounds(point_d, bounds_a))
+        self.assertTrue(plot_utils.point_in_bounds(point_e, bounds_a))
+        self.assertTrue(plot_utils.point_in_bounds(point_e, bounds_a,1e-9))
+        self.assertFalse(plot_utils.point_in_bounds(point_e, bounds_a,1e-13))
+        self.assertFalse(plot_utils.point_in_bounds(point_e, bounds_a,0))
+        self.assertFalse(plot_utils.point_in_bounds(point_f, bounds_a,0))
+        self.assertFalse(plot_utils.point_in_bounds(point_f, bounds_a))
+        self.assertFalse(plot_utils.point_in_bounds(point_f, bounds_a))
+        self.assertFalse(plot_utils.point_in_bounds(point_f, bounds_a,1e-12))
+        self.assertFalse(plot_utils.point_in_bounds(point_f, bounds_a,0))
+        self.assertTrue(plot_utils.point_in_bounds(point_f, bounds_a,0.001))
+
     def test_square_dist(self):
         """ Test floating-point-friendly fuzzy vertex point comparison """
         point_a = (0, 0)
