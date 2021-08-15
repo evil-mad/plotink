@@ -47,9 +47,9 @@ __version__ = version()
 def format_hms ( duration, seconds=False ):
     '''
     Given a number of milliseconds or seconds, return a formatted string
-    in the format "12:34:56 (Hours:Minutes:Seconds)" or 
+    in the format "12:34:56 (Hours:Minutes:Seconds)" or
     "34:56 (Minutes:Seconds)", depending on whether the time is
-    greater or less than one hour. 
+    greater or less than one hour.
     '''
     if seconds:
         m_elapsed, s_elapsed = divmod(duration, 60)
@@ -59,14 +59,13 @@ def format_hms ( duration, seconds=False ):
     if h_elapsed > 0:
         out_string =  f"{int(h_elapsed)}:{int(m_elapsed):02}:{int(s_elapsed):02}"
         return out_string + " (Hours, minutes, seconds)"
-    else:
-        out_string =  f"{int(m_elapsed)}:{int(s_elapsed):02}"
-        return out_string + " (Minutes, seconds)"
+    out_string =  f"{int(m_elapsed)}:{int(s_elapsed):02}"
+    return out_string + " (Minutes, seconds)"
 
 
 def position_scale (x_value, y_value, units_code):
-    ''' 
-    Format position data to be returned to user 
+    '''
+    Format position data to be returned to user
     x_value, y_value inputs are in inches.
     Output set by units_code: 1 for cm, 2 for mm, 0 (or otherwise) for inch.
     '''
