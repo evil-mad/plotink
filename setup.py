@@ -16,8 +16,8 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='plotink',
-    version='1.2.4',
-    python_requires='>=3.5.0',
+    version='1.2.5',
+    python_requires='>=3.6.0',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/evil-mad/plotink',
@@ -36,7 +36,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=[
         'ink_extensions',
-        'pyserial>=3.5',
+        'pyserial>=3.6',
     ],
     extras_require={
         'dev': ['coverage'],
