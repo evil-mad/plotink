@@ -70,20 +70,6 @@ def format_hms (duration, milliseconds=False):
     return f'{s_elapsed:.3f} Seconds'
 
 
-def position_scale (x_value, y_value, units_code):
-    '''
-    Format XY position data to be returned to user
-    x_value, y_value inputs are in inches.
-    Output set by units_code: 1 for cm, 2 for mm, 0 (or otherwise) for inch.
-    '''
-    if units_code == 1 : # If using centimeter units
-        x_value = x_value * 2.54
-        y_value = y_value * 2.54
-    if units_code == 2: # If using millimeter units
-        x_value = x_value * 25.4
-        y_value = y_value * 25.4
-    return x_value, y_value
-
 def xml_escape ( input_text ):
     '''
     Replace the five XML special characters with their character entities

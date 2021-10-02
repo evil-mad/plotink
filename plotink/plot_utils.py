@@ -370,6 +370,21 @@ def unitsToUserUnits(input_string):
     return None
 
 
+def position_scale (x_value, y_value, units_code):
+    '''
+    Format XY position data to be returned to user
+    x_value, y_value inputs are in inches.
+    Output set by units_code: 1 for cm, 2 for mm, 0 (or otherwise) for inch.
+    '''
+    if units_code == 1 : # If using centimeter units
+        x_value = x_value * 2.54
+        y_value = y_value * 2.54
+    if units_code == 2: # If using millimeter units
+        x_value = x_value * 25.4
+        y_value = y_value * 25.4
+    return x_value, y_value
+
+
 def subdivideCubicPath(s_p, flat, i=1):
     """
     Break up a bezier curve into smaller curves, each of which
