@@ -84,3 +84,13 @@ def position_scale (x_value, y_value, units_code):
         y_value = y_value * 25.4
     return x_value, y_value
 
+def xml_escape ( input_text ):
+    '''
+    Replace the five XML special characters with their character entities
+    '''
+    new_text = input_text.replace('&','&amp;')
+    new_text = new_text.replace('<','&lt;')
+    new_text = new_text.replace('>','&gt;')
+    new_text = new_text.replace('"','&quot;')
+    new_text = new_text.replace("'",'&apos;')
+    return new_text
