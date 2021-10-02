@@ -43,7 +43,7 @@ serial = from_dependency_import('serial')
 logger = logging.getLogger(__name__)
 
 def version():      # Version number for this document
-    return "0.15"   # Dated 2021-04-20
+    return "0.16"   # Dated 2021-10-02
 
 
 def findPort():
@@ -54,7 +54,10 @@ def findPort():
     except ImportError:
         return None
     if comports:
-        com_ports_list = list(comports())
+        try:
+            com_ports_list = list(comports())
+        except TypeError: # https://github.com/evil-mad/plotink/issues/38
+            return None
         ebb_port = None
         for port in com_ports_list:
             if port[1].startswith("EiBotBoard"):
