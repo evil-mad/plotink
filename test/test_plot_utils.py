@@ -168,7 +168,19 @@ class PlotUtilsTestCase(unittest.TestCase):
         self.assertEqual(None, the_value)
         self.assertEqual(None, the_units)
 
-
+    def test_position_scale(self):
+        """ test position_scale function """
+        for i in range(5):
+            [x_in, y_in] =  [random.random(), random.random()]
+            x_out, y_out = plot_utils.position_scale(x_in, y_in, None)
+            self.assertEqual(x_out, x_in)
+            self.assertEqual(y_out, y_in)
+            x_out, y_out = plot_utils.position_scale(x_in, y_in, 1)
+            self.assertEqual(x_out, x_in * 2.54)
+            self.assertEqual(y_out, y_in * 2.54)
+            x_out, y_out = plot_utils.position_scale(x_in, y_in, 2)
+            self.assertEqual(x_out, x_in * 25.4)
+            self.assertEqual(y_out, y_in * 25.4)
 
     def test_subdiv_no_divisions(self):
         """ Tests for subdivideCubicPath
