@@ -47,7 +47,7 @@ ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
     """Return version number of this script"""
-    return "0.20" # Dated 2021-10-02
+    return "0.21" # Dated 2021-10-13
 
 __version__ = version()
 
@@ -155,6 +155,8 @@ def clip_segment(segment, bounds):
     x_max = bounds[1][0]
     y_max = bounds[1][1]
 
+    iterations = 0
+
     while True: # Repeat until return
         code_1 = clip_code(x_1, y_1, x_min, x_max, y_min, y_max)
         code_2 = clip_code(x_2, y_2, x_min, x_max, y_min, y_max)
@@ -165,6 +167,8 @@ def clip_segment(segment, bounds):
         # Trivial reject, if both endpoints are outside, and on the same side:
         if code_1 & code_2:
             return False, segment # Verify with bitwise AND.
+        if iterations > 3: # Failsafe; exit if the value has not converged;
+            return True, segment # Avoids infinite loops near precision limits.
 
         # Otherwise, at least one point is out of bounds; not trivial.
         if code_1 != 0:
@@ -201,6 +205,7 @@ def clip_segment(segment, bounds):
             x_2 = x_new
             y_2 = y_new
         segment = [[x_1, y_1], [x_2, y_2]] # Now checking this clipped segment
+        iterations += 1
 
 
 def constrainLimits(value, lower_bound, upper_bound):
