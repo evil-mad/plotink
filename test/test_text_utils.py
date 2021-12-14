@@ -47,9 +47,28 @@ class TextUtilsTestCase(unittest.TestCase):
             '58:20 (Minutes, seconds)')
         self.assertEqual(text_utils.format_hms(1.0456e7),
             '2904:26:40 (Hours, minutes, seconds)')
+        self.assertEqual(text_utils.format_hms(9.999),
+            '9.999 Seconds')
+        self.assertEqual(text_utils.format_hms(9999, True),
+            '9.999 Seconds')
+        self.assertEqual(text_utils.format_hms(10.0001),
+            '10 Seconds')
+        self.assertEqual(text_utils.format_hms(10.49),
+            '10 Seconds')
+        self.assertEqual(text_utils.format_hms(10.51),
+            '11 Seconds')
+        self.assertEqual(text_utils.format_hms(179.999),
+            '3:00 (Minutes, seconds)')
+        self.assertEqual(text_utils.format_hms(179.49),
+            '2:59 (Minutes, seconds)')
+        self.assertEqual(text_utils.format_hms(180.49),
+            '3:00 (Minutes, seconds)')
+        self.assertEqual(text_utils.format_hms(3599.6),
+            '1:00:00 (Hours, minutes, seconds)')
+
 
     def test_xml_escape(self):
-        """ test format_hms function """
+        """ test xml_escape function """
         self.assertEqual(text_utils.xml_escape("Hello&Goodbye"),
             'Hello&amp;Goodbye')
         self.assertEqual(text_utils.xml_escape("<test>"),
