@@ -47,7 +47,7 @@ ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
     """Return version number of this script"""
-    return "0.21" # Dated 2021-10-13
+    return "0.3" # Dated 2021-12-26
 
 __version__ = version()
 
@@ -344,12 +344,13 @@ def parseLengthWithUnits(string_to_parse):
     return value, units
 
 
-def unitsToUserUnits(input_string):
+def unitsToUserUnits(input_string, percent_ref=None):
     """
     Custom replacement for the unittouu routine in inkex.py
 
-    Parse the attribute into a value and associated units.
-    Return value in user units (typically "px").
+    Parse input_string into a value and units. Return value in user units (typically "px").
+    If input_string units are '%', then return (value * percent_ref / 100), where percent_ref
+    is a number corresponding to a length of 100% in in user units, e.g., document width.
     """
 
     value, unit = parseLengthWithUnits(input_string)
@@ -370,9 +371,11 @@ def unitsToUserUnits(input_string):
     if unit == 'pt':
         return float(value) * PX_PER_INCH / 72.0
     if unit == '%':
-        return float(value) / 100.0
-    # Unsupported units
-    return None
+        if percent_ref:
+            return float(value) * float(percent_ref) / 100.0
+        else:
+            return float(value) / 100.0
+    return None # Handle case of cnsupported units
 
 
 def position_scale (x_value, y_value, units_code):
