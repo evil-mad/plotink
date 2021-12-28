@@ -310,6 +310,9 @@ def parseLengthWithUnits(string_to_parse):
     There is a more general routine to consider in scour.py if more
     generality is ever needed.
     """
+
+    if string_to_parse is None:
+        return None, None
     units = 'px'
     string = string_to_parse.strip()
     if string[-2:] == 'px':  # pixels, at a size of PX_PER_INCH per inch
@@ -352,7 +355,6 @@ def unitsToUserUnits(input_string, percent_ref=None):
     If input_string units are '%', then return (value * percent_ref / 100), where percent_ref
     is a number corresponding to a length of 100% in in user units, e.g., document width.
     """
-
     value, unit = parseLengthWithUnits(input_string)
     if value is None:
         return None
@@ -365,7 +367,7 @@ def unitsToUserUnits(input_string, percent_ref=None):
     if unit == 'cm':
         return float(value) * PX_PER_INCH / 2.54
     if unit in ('Q', 'q'):
-        return float(value) * PX_PER_INCH / (40.0 * 2.54)
+        return float(value) * PX_PER_INCH / 101.6
     if unit == 'pc':
         return float(value) * PX_PER_INCH / 6.0
     if unit == 'pt':
