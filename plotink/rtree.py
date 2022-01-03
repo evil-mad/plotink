@@ -37,6 +37,10 @@ Minimal R-tree spatial index class for calculating intersecting regions
 
 import math
 
+def version():    # Version number for this document
+    """Return version number of this script"""
+    return "1.0" # Dated 2022-01-03
+
 class Index:
     ''' One-shot R-Tree index (no rebalancing, insertions, etc.)
     '''
