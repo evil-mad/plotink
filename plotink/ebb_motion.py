@@ -12,7 +12,7 @@ See version() below for version number.
 
 The MIT License (MIT)
 
-Copyright (c) 2021 Windell H. Oskay, Evil Mad Scientist Laboratories
+Copyright (c) 2022 Windell H. Oskay, Evil Mad Scientist Laboratories
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ from . import ebb_serial
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.21"  # Dated April 20, 2021
+    return "0.22"  # Dated 2022-02-22
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -305,9 +305,9 @@ def QueryEnableMotors(port_name):
     if port_name is not None:
         try:
             result = ebb_serial.query(port_name, 'PI,E,0\r') # Read motor 1 enable pin
-            enable_1 = result.split("PI,")[1].strip() == "1"
+            enable_1 = result.split("PI,")[1].strip() == "0"
             result = ebb_serial.query(port_name, 'PI,C,1\r') # Read motor 2 enable pin
-            enable_2 = result.split("PI,")[1].strip() == "1"
+            enable_2 = result.split("PI,")[1].strip() == "0"
             result = ebb_serial.query(port_name, 'PI,E,2\r') # Read MS1
             ms_1 = result.split("PI,")[1].strip() == "1"
             result = ebb_serial.query(port_name, 'PI,E,1\r') # Read MS2
