@@ -38,7 +38,7 @@ from . import ebb_serial
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.22"  # Dated 2022-02-22
+    return "0.23"  # Dated 2022-02-22
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -332,6 +332,25 @@ def query_enable_motors(port_name):
                 res_2 = 0
 
             return res_1, res_2
+        except:
+            return None, None
+    return None, None
+
+
+def query_steps(port_name):
+    """
+    Read current step positions.
+    Returns: steps_1, steps_2 as integers
+
+    This query uses QS ( http://evil-mad.github.io/EggBot/ebb.html#QS )
+    and requires firmware version 2.4.3 or newer.
+    """
+
+    if port_name is not None:
+        try:
+            result = ebb_serial.query(port_name, 'QS\r') # Query global step position
+            result_list = result.strip().split(",")
+            return int(result_list[0]), int(result_list[1])
         except:
             return None, None
     return None, None
