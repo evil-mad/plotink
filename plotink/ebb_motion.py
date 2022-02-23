@@ -285,11 +285,11 @@ def sendEnableMotors(port_name, res):
     if port_name is not None:
         ebb_serial.command(port_name, 'EM,{0},{0}\r'.format(res))
 
-def QueryEnableMotors(port_name):
+def query_enable_motors(port_name):
     """
     Read current state of motors and their resolution.
     Returns: res_1, res_2
-        These are formatted the same way as the EM command
+        These are formatted the same way as the EM command:
 
         If res_x == 0, -> Motor disabled
         If res_x == 1, -> 16X microstepping
@@ -299,8 +299,7 @@ def QueryEnableMotors(port_name):
         If res_x == 5, -> No microstepping
 
     This query uses PI ( http://evil-mad.github.io/EggBot/ebb.html#PI )
-    to read the output state of the I/O pins that control the motor
-    driver ICs
+    to read the output state of the I/O pins that control the motor driver ICs
     """
     if port_name is not None:
         try:
