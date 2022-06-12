@@ -12,7 +12,7 @@
 #
 # The MIT License (MIT)
 #
-# Copyright (c) 2021 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2022 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from distutils.version import LooseVersion
+from packaging.version import parse
 import gettext
 import logging
 
@@ -43,7 +43,7 @@ serial = from_dependency_import('serial')
 logger = logging.getLogger(__name__)
 
 def version():      # Version number for this document
-    return "0.16"   # Dated 2021-10-02
+    return "0.17"   # Dated 2022-06-12
 
 
 def findPort():
@@ -409,7 +409,7 @@ def min_version(port_name, version_string):
             return None  # We haven't received a reasonable version number response.
 
         ebb_version_string = ebb_version_string.strip()  # Stripped copy, for number comparisons
-        if LooseVersion(ebb_version_string) >= LooseVersion(version_string):
+        if parse(ebb_version_string) >= parse(version_string):
             return True
         else:
             return False
