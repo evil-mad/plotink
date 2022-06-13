@@ -41,7 +41,8 @@ from packaging.version import parse
 from .plot_utils_import import from_dependency_import
 inkex = from_dependency_import('ink_extensions.inkex')
 serial = from_dependency_import('serial')
-from serial.tools.list_ports import comports #pylint: disable=wrong-import-position
+from serial.tools.list_ports import comports \
+    #pylint: disable=wrong-import-position, wrong-import-order
 
 logger = logging.getLogger(__name__)
 
@@ -54,23 +55,21 @@ def findPort():
     '''
     Find first available EiBotBoard by searching USB ports. Return serial port object.
     '''
-    if comports:
-        try:
-            com_ports_list = list(comports())
-        except TypeError: # https://github.com/evil-mad/plotink/issues/38
-            return None
-        ebb_port = None
+    try:
+        com_ports_list = list(comports())
+    except TypeError:
+        return None
+    ebb_port = None
+    for port in com_ports_list:
+        if port[1].startswith("EiBotBoard"):
+            ebb_port = port[0]  # Success; EBB found by name match.
+            break  # stop searching-- we are done.
+    if ebb_port is None:
         for port in com_ports_list:
-            if port[1].startswith("EiBotBoard"):
-                ebb_port = port[0]  # Success; EBB found by name match.
+            if port[2].startswith("USB VID:PID=04D8:FD92"):
+                ebb_port = port[0]  # Success; EBB found by VID/PID match.
                 break  # stop searching-- we are done.
-        if ebb_port is None:
-            for port in com_ports_list:
-                if port[2].startswith("USB VID:PID=04D8:FD92"):
-                    ebb_port = port[0]  # Success; EBB found by VID/PID match.
-                    break  # stop searching-- we are done.
-        return ebb_port
-    return None
+    return ebb_port
 
 
 def find_named_ebb(port_name):
@@ -84,43 +83,45 @@ def find_named_ebb(port_name):
     If not found, Return None
     '''
     if port_name is not None:
-        if comports:
-            needle = 'SER=' + port_name     # pyserial 3
-            needle2 = 'SNR=' + port_name    # pyserial 2.7
-            needle3 = '(' + port_name + ')' # e.g., "(COM4)"
+        needle = 'SER=' + port_name     # pyserial 3
+        needle2 = 'SNR=' + port_name    # pyserial 2.7
+        needle3 = '(' + port_name + ')' # e.g., "(COM4)"
 
-            needle = needle.lower()
-            needle2 = needle2.lower()
-            needle3 = needle3.lower()
-            plower = port_name.lower()
+        needle = needle.lower()
+        needle2 = needle2.lower()
+        needle3 = needle3.lower()
+        plower = port_name.lower()
 
+        try:
             com_ports_list = list(comports())
+        except TypeError:
+            return None
 
-            for port in com_ports_list:
-                p0 = port[0].lower()
-                p1 = port[1].lower()
-                p2 = port[2].lower()
+        for port in com_ports_list:
+            p_0 = port[0].lower()
+            p_1 = port[1].lower()
+            p_2 = port[2].lower()
 
-                if needle in p2:
-                    return port[0]  # Success; EBB found by name match.
-                if needle2 in p2:
-                    return port[0]  # Success; EBB found by name match.
-                if needle3 in p1:
-                    return port[0]  # Success; EBB found by port match.
+            if needle in p_2:
+                return port[0]  # Success; EBB found by name match.
+            if needle2 in p_2:
+                return port[0]  # Success; EBB found by name match.
+            if needle3 in p_1:
+                return port[0]  # Success; EBB found by port match.
 
-                p1 = p1[11:]
-                if p1.startswith(plower):
-                    return port[0]  # Success; EBB found by name match.
-                if p0.startswith(plower):
-                    return port[0]  # Success; EBB found by port match.
+            p_1 = p_1[11:]
+            if p_1.startswith(plower):
+                return port[0]  # Success; EBB found by name match.
+            if p_0.startswith(plower):
+                return port[0]  # Success; EBB found by port match.
 
-                needle.replace(" ", "_") # SN on Windows has underscores, not spaces.
-                if needle in p2:
-                    return port[0]  # Success; EBB found by port match.
+            needle.replace(" ", "_") # SN on Windows has underscores, not spaces.
+            if needle in p_2:
+                return port[0]  # Success; EBB found by port match.
 
-                needle2.replace(" ", "_") # SN on Windows has underscores, not spaces.
-                if needle2 in p2:
-                    return port[0]  # Success; EBB found by port match.
+            needle2.replace(" ", "_") # SN on Windows has underscores, not spaces.
+            if needle2 in p_2:
+                return port[0]  # Success; EBB found by port match.
     return None
 
 
@@ -183,33 +184,39 @@ def reboot(port_name):
 
 def list_port_info():
     '''Find and return a list of all USB devices and their information.'''
-    if comports:
+    try:
         com_ports_list = list(comports())
-        port_info_list = []
-        for port in com_ports_list:
-            port_info_list.append(port[0]) # port name
-            port_info_list.append(port[1]) # Identifier
-            port_info_list.append(port[2]) # VID/PID
-        if port_info_list:
-            return port_info_list
+    except TypeError:
+        return None
+
+    port_info_list = []
+    for port in com_ports_list:
+        port_info_list.append(port[0]) # port name
+        port_info_list.append(port[1]) # Identifier
+        port_info_list.append(port[2]) # VID/PID
+    if port_info_list:
+        return port_info_list
     return None
 
 
 def listEBBports():
     '''Find and return a list of all EiBotBoard units connected via USB port.'''
-    if comports:
+
+    try:
         com_ports_list = list(comports())
-        ebb_ports_list = []
-        for port in com_ports_list:
-            port_has_ebb = False
-            if port[1].startswith("EiBotBoard"):
-                port_has_ebb = True
-            elif port[2].startswith("USB VID:PID=04D8:FD92"):
-                port_has_ebb = True
-            if port_has_ebb:
-                ebb_ports_list.append(port)
-        if ebb_ports_list:
-            return ebb_ports_list
+    except TypeError:
+        return None
+    ebb_ports_list = []
+    for port in com_ports_list:
+        port_has_ebb = False
+        if port[1].startswith("EiBotBoard"):
+            port_has_ebb = True
+        elif port[2].startswith("USB VID:PID=04D8:FD92"):
+            port_has_ebb = True
+        if port_has_ebb:
+            ebb_ports_list.append(port)
+    if ebb_ports_list:
+        return ebb_ports_list
     return None
 
 
@@ -221,11 +228,11 @@ def list_named_ebbs():
     ebb_names_list = []
     for port in ebb_ports_list:
         name_found = False
-        p0 = port[0]
-        p1 = port[1]
-        p2 = port[2]
-        if p1.startswith("EiBotBoard"):
-            temp_string = p1[11:]
+        p_0 = port[0]
+        p_1 = port[1]
+        p_2 = port[2]
+        if p_1.startswith("EiBotBoard"):
+            temp_string = p_1[11:]
             if temp_string:
                 if temp_string is not None:
                     ebb_names_list.append(temp_string)
@@ -233,10 +240,10 @@ def list_named_ebbs():
         if not name_found:
             # Look for "SER=XXXX LOCAT" pattern,
             #  typical of Pyserial 3 on Windows.
-            if 'SER=' in p2 and ' LOCAT' in p2:
-                index1 = p2.find('SER=') + len('SER=')
-                index2 = p2.find(' LOCAT', index1)
-                temp_string = p2[index1:index2]
+            if 'SER=' in p_2 and ' LOCAT' in p_2:
+                index1 = p_2.find('SER=') + len('SER=')
+                index2 = p_2.find(' LOCAT', index1)
+                temp_string = p_2[index1:index2]
                 if len(temp_string) < 3:
                     temp_string = None
                 if temp_string is not None:
@@ -245,17 +252,17 @@ def list_named_ebbs():
         if not name_found:
             # Look for "...SNR=XXXX" pattern,
             #  typical of Pyserial 2.7 on Windows
-            if 'SNR=' in p2:
-                index1 = p2.find('SNR=') + len('SNR=')
-                index2 = len(p2)
-                temp_string = p2[index1:index2]
+            if 'SNR=' in p_2:
+                index1 = p_2.find('SNR=') + len('SNR=')
+                index2 = len(p_2)
+                temp_string = p_2[index1:index2]
                 if len(temp_string) < 3:
                     temp_string = None
                 if temp_string is not None:
                     ebb_names_list.append(temp_string)
                     name_found = True
         if not name_found:
-            ebb_names_list.append(p0)
+            ebb_names_list.append(p_0)
     return ebb_names_list
 
 
