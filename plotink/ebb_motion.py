@@ -38,7 +38,7 @@ from . import ebb_serial
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.23"  # Dated 2022-02-22
+    return "0.24"  # Dated 2022-06-12
 
 
 def doABMove(port_name, delta_a, delta_b, duration):
@@ -105,11 +105,11 @@ def doAbsMove(port_name, rate, position1=None, position2=None):
     were enabled. It is not necessarily a move in a straight line.
     If both position1 and position2 are given, then move to the given position.
     Otherwise, return to the position where the motors were enabled.
-    
+
     This command requires firmware version 2.6.2 or newer for moves to
     the starting position, or firmware 2.7.0 or newer for moves that
     specify an XY position.
-    
+
     This command DOES NOT perform a firmware version check. Use (e.g.)
         ebb_serial.min_version(port_name, "2.6.2") or
         ebb_serial.min_version(port_name, "2.7.0") if necessary.
@@ -278,10 +278,8 @@ def sendEnableMotors(port_name, res):
         If res == 4, -> 2X microstepping
         If res == 5, -> No microstepping
     """
-    if res < 0:
-        res = 0
-    if res > 5:
-        res = 5
+    res = max(res, 0)
+    res = min(res, 5)
     if port_name is not None:
         ebb_serial.command(port_name, 'EM,{0},{0}\r'.format(res))
 
