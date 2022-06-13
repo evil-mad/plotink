@@ -1,58 +1,59 @@
 # coding=utf-8
-# ebb_serial.py
-# Serial connection utilities for EiBotBoard
-# https://github.com/evil-mad/plotink
-#
-# Intended to provide some common interfaces that can be used by
-# EggBot, WaterColorBot, AxiDraw, and similar machines.
-#
-# See below for version information
-#
-# Thanks to Shel Michaels for bug fixes and helpful suggestions.
-#
-# The MIT License (MIT)
-#
-# Copyright (c) 2022 Windell H. Oskay, Evil Mad Scientist Laboratories
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+'''
+ebb_serial.py
+Serial connection utilities for EiBotBoard
+https://github.com/evil-mad/plotink
 
-from packaging.version import parse
-import gettext
+Intended to provide some common interfaces that can be used by
+EggBot, WaterColorBot, AxiDraw, and similar machines.
+
+See below for version information
+
+Thanks to Shel Michaels for bug fixes and helpful suggestions.
+
+
+The MIT License (MIT)
+
+Copyright (c) 2022 Windell H. Oskay, Evil Mad Scientist Laboratories
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+'''
+
 import logging
+from packaging.version import parse
 
 from .plot_utils_import import from_dependency_import
 inkex = from_dependency_import('ink_extensions.inkex')
 serial = from_dependency_import('serial')
+from serial.tools.list_ports import comports #pylint: disable=wrong-import-position
 
 logger = logging.getLogger(__name__)
 
-def version():      # Version number for this document
+def version():
+    '''Version number for this document'''
     return "0.17"   # Dated 2022-06-12
 
 
 def findPort():
-    # Find first available EiBotBoard by searching USB ports.
-    # Return serial port object.
-    try:
-        from serial.tools.list_ports import comports
-    except ImportError:
-        return None
+    '''
+    Find first available EiBotBoard by searching USB ports. Return serial port object.
+    '''
     if comports:
         try:
             com_ports_list = list(comports())
@@ -69,25 +70,20 @@ def findPort():
                     ebb_port = port[0]  # Success; EBB found by VID/PID match.
                     break  # stop searching-- we are done.
         return ebb_port
+    return None
 
 
 def find_named_ebb(port_name):
-    # Find a specific EiBotBoard identified by a string giving either:
-    #        The enumerated serial port, or
-    #        An EBB "Name tag"
-    #
-    # Names should be 3-16 characters long.
-    # Comparisons are not case sensitive.
-    #
-    # (Name tags may assigned with the ST command on firmware 2.5.5 and later.)
-    #
-    # If found:     Return serial port name (enumeration)
-    # If not found, Return None
+    '''
+    Find a specific EiBotBoard identified by a string giving either:
+           The enumerated serial port, or
+           An EBB "Name tag"
+    Names should be 3-16 characters long. Comparisons are not case sensitive.
+    (Name tags may assigned with the ST command on firmware 2.5.5 and later.)
+    If found:     Return serial port name (enumeration)
+    If not found, Return None
+    '''
     if port_name is not None:
-        try:
-            from serial.tools.list_ports import comports
-        except ImportError:
-            return None
         if comports:
             needle = 'SER=' + port_name     # pyserial 3
             needle2 = 'SNR=' + port_name    # pyserial 2.7
@@ -99,7 +95,6 @@ def find_named_ebb(port_name):
             plower = port_name.lower()
 
             com_ports_list = list(comports())
-            ebb_port = None
 
             for port in com_ports_list:
                 p0 = port[0].lower()
@@ -126,14 +121,16 @@ def find_named_ebb(port_name):
                 needle2.replace(" ", "_") # SN on Windows has underscores, not spaces.
                 if needle2 in p2:
                     return port[0]  # Success; EBB found by port match.
+    return None
 
 
 def query_nickname(port_name, verbose=True):
-    # Query the EBB nickname and report it.
-    # This feature is only supported in firmware versions 2.5.5 and newer.
-    # If verbose is True or omitted, the result will be human readable.
-    # A short version is returned if verbose is False.
-    # http://evil-mad.github.io/EggBot/ebb.html#QT
+    '''
+    Query the EBB nickname and report it.
+    If verbose is True or omitted, the result will be human readable.
+    A short version is returned if verbose is False.
+    Requires firmware version 2.5.5 or newer. http://evil-mad.github.io/EggBot/ebb.html#QT
+    '''
     if port_name is not None:
         version_status = min_version(port_name, "2.5.5")
 
@@ -142,22 +139,21 @@ def query_nickname(port_name, verbose=True):
             if raw_string.isspace():
                 if verbose:
                     return "This AxiDraw does not have a nickname assigned."
-                else:
-                    return None
-            else:
-                if verbose:
-                    return "AxiDraw nickname: " + raw_string
-                else:
-#                     string_temp = str(raw_string).strip()
-                    return str(raw_string).strip()
-        elif version_status is False:
+                return None
+            if verbose:
+                return "AxiDraw nickname: " + raw_string
+            return str(raw_string).strip()
+        if version_status is False:
             if verbose:
                 return "AxiDraw naming requires firmware version 2.5.5 or higher."
+    return None
+
 
 def write_nickname(port_name, nickname):
-    # Write the EBB nickname.
-    # This feature is only supported in firmware versions 2.5.5 and newer.
-    # http://evil-mad.github.io/EggBot/ebb.html#ST
+    '''
+    Write the EBB nickname.
+    Requires firmware version 2.5.5 or newer. http://evil-mad.github.io/EggBot/ebb.html#ST
+    '''
     if port_name is not None:
         version_status = min_version(port_name, "2.5.5")
 
@@ -168,12 +164,14 @@ def write_nickname(port_name, nickname):
                 return True
             except:
                 return False
+    return None
+
 
 def reboot(port_name):
-    # Reboot the EBB, as though it were just powered on.
-    # This feature is only supported in firmware versions 2.5.5 and newer.
-    # It has no effect if called on an EBB with older firmware.
-    # http://evil-mad.github.io/EggBot/ebb.html#RB
+    '''
+    Reboot the EBB, as though it were just powered on.
+    Requires firmware version 2.5.5 or newer. http://evil-mad.github.io/EggBot/ebb.html#RB
+    '''
     if port_name is not None:
         version_status = min_version(port_name, "2.5.5")
         if version_status:
@@ -184,11 +182,7 @@ def reboot(port_name):
 
 
 def list_port_info():
-    # Find and return a list of all USB devices and their information.
-    try:
-        from serial.tools.list_ports import comports
-    except ImportError:
-        return None
+    '''Find and return a list of all USB devices and their information.'''
     if comports:
         com_ports_list = list(comports())
         port_info_list = []
@@ -198,15 +192,11 @@ def list_port_info():
             port_info_list.append(port[2]) # VID/PID
         if port_info_list:
             return port_info_list
+    return None
 
 
 def listEBBports():
-    # Find and return a list of all EiBotBoard units
-    # connected via USB port.
-    try:
-        from serial.tools.list_ports import comports
-    except ImportError:
-        return None
+    '''Find and return a list of all EiBotBoard units connected via USB port.'''
     if comports:
         com_ports_list = list(comports())
         ebb_ports_list = []
@@ -220,13 +210,14 @@ def listEBBports():
                 ebb_ports_list.append(port)
         if ebb_ports_list:
             return ebb_ports_list
+    return None
 
 
 def list_named_ebbs():
-    # Return discriptive list of all EiBotBoard units
+    '''Return descriptive list of all EiBotBoard units'''
     ebb_ports_list = listEBBports()
     if not ebb_ports_list:
-        return
+        return None
     ebb_names_list = []
     for port in ebb_ports_list:
         name_found = False
@@ -235,7 +226,7 @@ def list_named_ebbs():
         p2 = port[2]
         if p1.startswith("EiBotBoard"):
             temp_string = p1[11:]
-            if (temp_string):
+            if temp_string:
                 if temp_string is not None:
                     ebb_names_list.append(temp_string)
                     name_found = True
@@ -253,8 +244,7 @@ def list_named_ebbs():
                     name_found = True
         if not name_found:
             # Look for "...SNR=XXXX" pattern,
-            #  typical of Pyserial 2.7 on Windows,
-            #  as in Inkscape 0.91 on Windows
+            #  typical of Pyserial 2.7 on Windows
             if 'SNR=' in p2:
                 index1 = p2.find('SNR=') + len('SNR=')
                 index2 = len(p2)
@@ -274,10 +264,9 @@ def testPort(port_name):
     Open a given serial port, verify that it is an EiBotBoard,
     and return a SerialPort object that we can reference later.
 
-    This routine only opens the port;
-    it will need to be closed as well, for example with closePort( port_name ).
+    This routine only opens the port; it will need to be closed as well,
+    for example with closePort( port_name ).
     You, who open the port, are responsible for closing it as well.
-
     """
     if port_name is not None:
         try:
@@ -300,28 +289,35 @@ def testPort(port_name):
         except serial.SerialException as err:
             logger.error("Error testing serial port `{}` connection".format(port_name))
             logger.info("Error context:", exc_info=err)
-        return None
+    return None
 
 
 def openPort():
-    # Find and open a port to a single attached EiBotBoard.
-    # The first port located will be used.
+    '''
+    Find and open a port to a single attached EiBotBoard.
+    The first port located will be used.
+    '''
     found_port = findPort()
     serial_port = testPort(found_port)
     if serial_port:
         return serial_port
+    return None
 
 
 def open_named_port(port_name):
-    # Find and open a port to a single attached EiBotBoard.
-    # The first port located will be used.
+    '''
+    Find and open a port to a single attached EiBotBoard, indicated by name.
+    The first port located will be used.
+    '''
     found_port = find_named_ebb(port_name)
     serial_port = testPort(found_port)
     if serial_port:
         return serial_port
+    return None
 
 
 def closePort(port_name):
+    '''Close the given serial port.'''
     if port_name is not None:
         try:
             port_name.close()
@@ -330,6 +326,7 @@ def closePort(port_name):
 
 
 def query(port_name, cmd):
+    '''General command to send a query to the EiBotBoard'''
     if port_name is not None and cmd is not None:
         response = ''
         try:
@@ -353,9 +350,11 @@ def query(port_name, cmd):
             logger.error("Error reading serial data")
             logger.info("Error context:", exc_info=err)
         return response
+    return None
 
 
 def command(port_name, cmd):
+    '''General command to send a command to the EiBotBoard'''
     if port_name is not None and cmd is not None:
         try:
             port_name.write(cmd.encode('ascii'))
@@ -384,21 +383,23 @@ def command(port_name, cmd):
 
 
 def bootload(port_name):
-    # Enter bootloader mode. Do not try to read back data.
+    '''Enter bootloader mode. Do not try to read back data.'''
     if port_name is not None:
         try:
             port_name.write('BL\r'.encode('ascii'))
             return True
         except:
             return False
+    return None
 
 
 def min_version(port_name, version_string):
-    # Query the EBB firmware version for the EBB located at port_name.
-    # Return True if the EBB firmware version is at least version_string.
-    # Return False if the EBB firmware version is below version_string.
-    # Return None if we are unable to determine True or False.
-
+    '''
+    Query the EBB firmware version for the EBB located at port_name.
+    Return True if the EBB firmware version is at least version_string.
+    Return False if the EBB firmware version is below version_string.
+    Return None if we are unable to determine True or False.
+    '''
     if port_name is not None:
         ebb_version_string = queryVersion(port_name)  # Full string, human readable
         ebb_version_string = ebb_version_string.split("Firmware Version ", 1)
@@ -411,9 +412,10 @@ def min_version(port_name, version_string):
         ebb_version_string = ebb_version_string.strip()  # Stripped copy, for number comparisons
         if parse(ebb_version_string) >= parse(version_string):
             return True
-        else:
-            return False
+        return False
+    return None
 
 
 def queryVersion(port_name):
-    return query(port_name, 'V\r')  # Query EBB Version String
+    '''Query EBB Version String'''
+    return query(port_name, 'V\r')
