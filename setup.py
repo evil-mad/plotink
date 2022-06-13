@@ -16,7 +16,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='plotink',
-    version='1.6.0',
+    version='1.6.1',
     python_requires='>=3.6.0',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -36,6 +36,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=[
         'ink_extensions',
+        'packaging>=21.0',
         'pyserial>=3.5',
     ],
     extras_require={
