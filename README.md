@@ -17,11 +17,12 @@ These library files are intended to provide a single place to edit routines that
 
 The library files are:
 
-* ebb_serial.py - General routines for communicating with the EiBotBoard by USB serial.
-* ebb_motion.py - Motion-related routines for interacting with the robot.
-* plot_utils.py - Additional helper functions for managing plots and their data.
-* text_utils.py - Additional helper functions for managing text.
-
+* ebb_serial.py   - General routines for communicating with the EiBotBoard by USB serial.
+* ebb_motion.py   - Motion-related routines for interacting with the robot.
+* plot_utils.py   - Additional helper functions for managing plots and their data.
+* text_utils.py   - Additional helper functions for managing text.
+* rtree.py        - Minimal R-tree spatial index class for calculating intersecting regions.
+* spatial_grid.py - Specialized flat grid spatial index class for finding nearest neighbors.
 
 ## Python version support
 
