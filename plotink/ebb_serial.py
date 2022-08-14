@@ -344,7 +344,7 @@ def query(port_name, cmd):
                 # get new response to replace null response if necessary
                 response = port_name.readline()
                 n_retry_count += 1
-            if cmd.split(",")[0].strip().lower() not in ["a", "i", "mr", "pi", "qc", "qm", "v"]:
+            if cmd.split(",")[0].strip().lower() not in ["a", "i", "mr", "pi", "qm", "qg", "v"]:
                 # Most queries return an "OK" after the data requested.
                 # We skip this for those few queries that do not return an extra line.
                 unused_response = port_name.readline()  # read in extra blank/OK line
