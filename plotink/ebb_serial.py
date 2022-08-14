@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 def version():
     '''Version number for this document'''
-    return "0.17"   # Dated 2022-06-12
+    return "0.18"   # Dated 2022-08-14
 
 
 def findPort():
@@ -344,7 +344,7 @@ def query(port_name, cmd):
                 # get new response to replace null response if necessary
                 response = port_name.readline()
                 n_retry_count += 1
-            if cmd.split(",")[0].strip().lower() not in ["v", "i", "a", "mr", "pi", "qm"]:
+            if cmd.split(",")[0].strip().lower() not in ["a", "i", "mr", "pi", "qc", "qm", "v"]:
                 # Most queries return an "OK" after the data requested.
                 # We skip this for those few queries that do not return an extra line.
                 unused_response = port_name.readline()  # read in extra blank/OK line
