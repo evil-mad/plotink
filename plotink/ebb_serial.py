@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 def version():
     '''Version number for this document'''
-    return "0.18"   # Dated 2022-08-14
+    return "0.19"   # Dated 2022-10-05
 
 
 def findPort():
@@ -332,7 +332,7 @@ def closePort(port_name):
             pass
 
 
-def query(port_name, cmd):
+def query(port_name, cmd, verbose=True):
     '''General command to send a query to the EiBotBoard'''
     if port_name is not None and cmd is not None:
         response = ''
@@ -354,13 +354,25 @@ def query(port_name, cmd):
                     unused_response = port_name.readline()
                     n_retry_count += 1
         except (serial.SerialException, IOError, RuntimeError, OSError) as err:
-            logger.error("Error reading serial data")
+            if verbose:
+                logger.error("Error reading serial data")
+            else:
+                logger.info("Error reading serial data")
             logger.info("Error context:", exc_info=err)
+
+        if 'Err:' in response:
+            error_msg = '\n'.join(('Unexpected response from EBB.',
+               '    Command: {0}'.format(cmd.strip()),
+               '    Response: {0}'.format(response.strip())))
+            if verbose:
+                logger.error(error_msg)
+            else:
+                logger.info(error_msg)
         return response
     return None
 
 
-def command(port_name, cmd):
+def command(port_name, cmd, verbose=True):
     '''General command to send a command to the EiBotBoard'''
     if port_name is not None and cmd is not None:
         try:
@@ -382,10 +394,16 @@ def command(port_name, cmd):
                                            '    Response: {0}'.format(response.strip())))
                 else:
                     error_msg = 'EBB Serial Timeout after command: {0}'.format(cmd)
-                logger.error(error_msg)
+                if verbose:
+                    logger.error(error_msg)
+                else:
+                    logger.info(error_msg)
         except (serial.SerialException, IOError, RuntimeError, OSError) as err:
             if cmd.strip().lower() not in ["rb"]: # Ignore error on reboot (RB) command
-                logger.error('Failed after command: {0}'.format(cmd))
+                if verbose:
+                    logger.error('Failed after command: {0}'.format(cmd))
+                else:
+                    logger.info('Failed after command: {0}'.format(cmd))
                 logger.info("Error context:", exc_info=err)
 
 
@@ -425,4 +443,4 @@ def min_version(port_name, version_string):
 
 def queryVersion(port_name):
     '''Query EBB Version String'''
-    return query(port_name, 'V\r')
+    return query(port_name, 'V\r', True)
