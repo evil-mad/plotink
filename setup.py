@@ -33,7 +33,7 @@ setup(
         "Intended Audience :: Developers",
     ],
 
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    packages=find_packages(exclude=['contrib', 'docs', 'test', 'test.*']),
     install_requires=[
         'ink_extensions',
         'packaging>=21.0',
