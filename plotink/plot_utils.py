@@ -5,7 +5,7 @@
 #
 # See below for version information
 #
-# Copyright (c) 2021 Windell H. Oskay, Evil Mad Scientist Laboratories
+# Copyright (c) 2022 Windell H. Oskay, Evil Mad Scientist Laboratories
 #
 # The MIT License (MIT)
 #
@@ -47,7 +47,7 @@ ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
     """Return version number of this script"""
-    return "0.3" # Dated 2021-12-26
+    return "0.4" # Dated 2022-12-09
 
 __version__ = version()
 
@@ -375,8 +375,7 @@ def unitsToUserUnits(input_string, percent_ref=None):
     if unit == '%':
         if percent_ref:
             return float(value) * float(percent_ref) / 100.0
-        else:
-            return float(value) / 100.0
+        return float(value) / 100.0
     return None # Handle case of cnsupported units
 
 
@@ -416,7 +415,7 @@ def subdivideCubicPath(s_p, flat, i=1):
 
             b_list = (p_0, p_1, p_2, p_3)
 
-            if cspsubdiv.maxdist(b_list) > flat:
+            if not points_in_tolerance(b_list, flat):
                 break
             i += 1
 
@@ -425,6 +424,56 @@ def subdivideCubicPath(s_p, flat, i=1):
         s_p[i][0] = two[2]
         p_list = [one[2], one[3], two[1]]
         s_p[i:1] = [p_list]
+
+
+def points_in_tolerance(input_points, tolerance): # pylint: disable=too-many-locals
+    """
+    Return True if a set of points is within tolerance of a line segment.
+
+    Given `input_points`, an ordered collection of xy vertices, we define a segment from the
+    first to last vertex. For each other vertex, measure its distance from the segment, and
+    return True if every distance is < `tolerance`. This function is a modified version
+    of max_dist_from_n_points, that returns a boolean, rather than the maximum value.
+
+    Does not mutate `input_points`.
+
+    This is a performance sensitive "inner loop" function that may be called thousands or
+    millions of times while the user is waiting. It is "unrolled" to reduce execution time
+    with some duplicate code, more local variables, no function calls, and few array lookups.
+    Previous code based on max_dist_from_n_points() was more "pythonic", using the Point
+    and Segment classes in ffgeom along with their methods. But, this is much faster.
+    """
+    assert len(input_points) >= 3, "There must be points (other than begin/end) to check."
+
+    tol_squared = tolerance * tolerance
+    seg_0x, seg_0y = input_points[0]
+    seg_1x, seg_1y = input_points[-1]
+    s_delta_x = seg_1x - seg_0x
+    s_delta_y = seg_1y - seg_0y
+
+    for point in input_points[1:-1]: # All vertices except first and last
+        p_x, p_y = point
+        dx_p_s0 = p_x - seg_0x
+        dy_p_s0 = p_y - seg_0y
+
+        temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y # First dot product
+        if temp1 <= 0:
+            if ( dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0 ) >= tol_squared:
+                return False
+            continue
+
+        seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
+        if seg_length_squared <= temp1:
+            if ((p_x - seg_1x)*(p_x - seg_1x) + (p_y - seg_1y)*(p_y - seg_1y)) >= tol_squared:
+                return False
+            continue
+
+        if seg_length_squared == 0:
+            return False # Zero-length segment; exit.
+        temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
+        if (temp * temp / seg_length_squared) >= tol_squared:
+            return False
+    return True
 
 
 def max_dist_from_n_points(input_points):
@@ -466,13 +515,17 @@ def supersample(vertices, tolerance):
     until the end of the vertex list is reached.
     """
     if len(vertices) <= 2: # there is nothing to delete
-        return vertices
+        return
+
+    if tolerance <= 0:
+        return
 
     start_index = 0 # can't remove first vertex
     while start_index < len(vertices) - 2:
         end_index = start_index + 2
         # test the removal of (start_index, end_index), exclusive until we can't advance end_index
-        while (max_dist_from_n_points(vertices[start_index:end_index + 1]) < tolerance
+
+        while (points_in_tolerance(vertices[start_index:end_index + 1], tolerance)
                and end_index < len(vertices)):
             end_index += 1 # try removing the next vertex too
 
@@ -634,16 +687,13 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
     excess_width = scaled_vb_width - width
 
     if par_align in {"xminymin", "xminymid", "xminymax"}:
-        # Case: X-Min: Align viewbox to minimum X of the viewport.
-        o_x = -min_x
+        o_x = -min_x # Case: X-Min: Align viewbox to minimum X of the viewport.
 
     elif par_align in {"xmaxymin", "xmaxymid", "xmaxymax"}:
-        # Case: X-Max: Align viewbox to maximum X of the viewport.
-        o_x = -min_x + excess_width
+        o_x = -min_x + excess_width # Case: X-Max: Align viewbox to maximum X of the viewport.
 
     else: # par_align in {"xmidymin", "xmidymid", "xmidymax"}:
-        # Default case: X-Mid: Center viewbox on page in X
-        o_x = -min_x + excess_width / 2
+        o_x = -min_x + excess_width / 2 # Default case: X-Mid: Center viewbox on page in X
 
     return s_x, s_y, o_x, o_y
     # return 1, 1, 0, 0 # Catch-all: return default transform
