@@ -12,7 +12,7 @@ See version() below for version number.
 
 The MIT License (MIT)
 
-Copyright (c) 2022 Windell H. Oskay, Evil Mad Scientist Laboratories
+Copyright (c) 2023 Windell H. Oskay, Evil Mad Scientist Laboratories
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,13 +33,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import math
 from . import ebb_serial
+from . import ebb_calc
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.25"  # Dated 2022-10-05
-
+    return "0.26"  # Dated 2023-05-04
 
 def doABMove(port_name, delta_a, delta_b, duration, verbose=True):
     '''
@@ -125,126 +124,36 @@ def doAbsMove(port_name, rate, position1=None, position2=None, verbose=True):
 
 def moveDistLM(rate_in, accel_in, time_ticks):
     '''
-    Calculate the number of motor steps taken using the LM command,
-    with rate factor r, acceleration accel_in, and in a given number
-    of 40 us time_ticks. Calculation is for one axis only.
-    Step distance moved after T time ticks is given by:
-        S = floor(( 2 * R * T + A * T^2 )/ 2^32 )
+    Deprecated function as of v 0.26, and will be removed in a future version.
+    Same as ebb_calc.move_dist_lt(), but does not accept or return accumulator value.
+    (This function was removed because without knowing the initial accumulator value,
+        it is possible to get the wrong distance.)
 
-    This calculation is valid for the revised LM command as of
-    version 2.7 of the EBB firmware.
+    Calls to this function may be replaced as per the example here, but it is better to
+        use ebb_calc.move_dist_lt() *with* an initial accumulator value.
     '''
-    time = int(time_ticks)  # Ensure that the inputs are integral.
-    rate_r0 = int(rate_in)
-    accel = int(accel_in)
-    if time == 0:
-        return 0
-    return (2 * rate_r0 * time + accel * time * time) >> 32
+    dist, _accum = ebb_calc.move_dist_lt(rate_in, accel_in, time_ticks, 0)
+    return dist
 
 
 def moveDistLMA(rate_in, accel_in, time_ticks, accum_in):
     '''
-    Calculate motor step count and final accumulator "remainder"
-    after a certain number of time ticks, using the LM or LT
-    command. Calculation is for one axis only.
-
-    Inputs: Rate factor rate_in, acceleration accel_in, initial
-    accumulator value accum_in, and 40 us intervals time_ticks.
-
-    Accumulator value T time ticks is given by:
-        Accum = R * T + 0.5 * accel_in * T^2 + accum_in
-        Steps = floor (Accum / 2^31)
-        Remainder = Accum - 2^31 * Steps
-
-    Return Steps, Remainder
-    This calculation is valid for version 2.7+ of the EBB firmware.
+    Deprecated function as of v 0.26, and will be removed in a future version.
+    Function renamed to: move_dist_lt().
     '''
-    time = int(time_ticks)  # Ensure that the inputs are integral.
-    rate_r0 = int(rate_in)
-    accel = int(accel_in)
-    accum_0 = int(accum_in)
-    if time == 0:
-        return 0, 0
-
-    # TWICE the accumulator value, before dividing:
-    accum_end = (2 * accum_0 + 2 * rate_r0 * time + accel * time * time) >> 1
-    step_count = accum_end >> 31
-    rems = (accum_end) - (step_count << 31)
-
-    return step_count, rems
+    return ebb_calc.move_dist_lt(rate_in, accel_in, time_ticks, accum_in)
 
 
-def moveTimeLM(rate_in, steps, accel_in):
+def moveTimeLM(rate, steps, accel):
     """
+    Deprecated function as of v 0.26, and will be removed in a future version.
+
     Calculate how long, in 40 us ISR intervals, the LM command will take to move one axis.
-
-    First: Distance in steps moved after T time ticks is given by
-      the formula: S = floor(( 2 * R * T + A * T^2 )/ 2^32 )
-    Use the quadratic formula to solve for possible values of time T,
-    the number of time ticks needed to travel the through distance of steps.
-
-    As this is a floating point result, we will round down the output, and
-    then move one time step forward until we find the result.
-
-    This calculation is valid for the revised LM command as of
-    version 2.7 of the EBB firmware.
+    Older version, for firmware 2.7+
     """
 
-    steps = abs(steps)
-    rate = float(rate_in)
-    accel = float(accel_in)
-
-    if steps == 0:
-        return 0  # No steps to take, so takes zero time.
-
-    if accel_in == 0:
-        if rate_in == 0:
-            return 0  # No move will be made if rate_in and accel_in are both zero.
-
-        # Case of no acceleration: Simple to get actual movement time, since
-        # Steps = floor(rate * Time / 2^31)
-        # Thus, Time = ceil(Steps * 2^31 / rate)
-
-        scaled_f = int(steps) << 31
-        return int(math.ceil(scaled_f / rate))
-
-    # Otherwise, accel_in is not zero.
-
-    # Solve quadratic for T
-    # S = floor(( 2 * R * T + A * T^2 )/ 2^32 )
-    # -> (1/2)A T^2 + R T - 2^31 S = 0
-    # a = A/2
-    # b = R
-    # c = -2^31 S
-    #
-    # T = (-b +/- sqrt(b^2 - 4 a c)) / 2 a
-
-    # factors:
-    a_fact = accel / 2.0
-    b_fact = rate
-    c_fact = -2147483648.0 * steps
-
-    root_factor = b_fact * b_fact - 4 * a_fact * c_fact
-
-    if root_factor < 0:
-        root_factor = 0
-    root = math.sqrt(root_factor)
-
-    result1 = int(math.ceil((- b_fact + root) / accel))
-    result2 = int(math.ceil((- b_fact - root) / accel))
-
-    if result1 < 0 and result2 < 0:
-        return -1  # No plausible roots; movement time must be positive
-
-    if result1 < 0:
-        time_ticks = result2  # Pick the positive root
-    elif result2 < 0:
-        time_ticks = result1  # Pick the positive root
-    elif result2 < result1:  # If both are valid, pick the smaller value.
-        time_ticks = result2
-    else:
-        time_ticks = result1
-    return time_ticks
+    time, _dist, _accum = ebb_calc.calculate_lm(steps, rate, accel, accum="clear")
+    return time
 
 
 def QueryPenUp(port_name, verbose=True):
