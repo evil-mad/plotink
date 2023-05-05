@@ -41,44 +41,109 @@ def version():  # Report version number for this document
     return "0.1"  # Dated 2023-05-04
 
 
-def move_dist_lt(rate_in, accel_in, time_ticks, accum_in):
+def move_dist_lt(rate, accel, time, accum="clear"):
     '''
-    Calculate motor step count and final accumulator "remainder"
-    after a certain number of time ticks, using the LM or LT
-    command. Calculation is for one axis only.
+    Calculate motor step count and final accumulator value after a given number
+    of ISR time ticks, using the LM or LT command. Calculation is for one axis only.
 
-    Inputs: Rate factor rate_in, acceleration accel_in, initial
-    accumulator value accum_in, and 40 us intervals time_ticks.
+    Inputs: Rate factor rate, acceleration accel, 
+            number of 40 us intervals time,
+            initial accumulator value (Default: "clear", or integer)
 
-    Accumulator value T time ticks is given by:
-        Accum = R * T + 0.5 * accel_in * T^2 + accum_in
+    Accumulator value at T time ticks is given by:
+        Accum = R_eff * T + 0.5 * accel_in * T^2 + accum_in
         Steps = floor (Accum / 2^31)
         Remainder = Accum - 2^31 * Steps
 
-    Return Steps, Remainder
+    Return Step position, Final accumulator value
     This calculation is valid for version 2.7+ of the EBB firmware.
     '''
-    time = int(time_ticks)  # Ensure that the inputs are integral.
-    rate_r0 = int(rate_in)
-    accel = int(accel_in)
-    accum_0 = int(accum_in)
+    time = int(time)  # Ensure that the inputs are integer.
+    rate = int(rate)
+    accel = int(accel)
     if time == 0:
         return 0, 0
 
     mpmath.mp.dps = 30 # Set decimal precision of 30.
 
-    # Account for difference in effective rate due to rounding of accel/2:
-    rate_effective = rate_r0 + mpmath.mpf(accel) / 2 - int(accel/2)
+    half_accel = int(accel / 2) # Rounds towards zero
 
-    # Total accumulator value at end of move, if it were not restricted to in  [0, 2^31):
-    c_final = mpmath.mpf(accum_0) + rate_effective * time +\
+    if accum == "clear": # Clear accumulator!
+        if rate + half_accel < 0: # rate AT STEP 1 is negative
+            accum = 2147483647  # Clear to 2^31 - 1
+        else:
+            accum = 0           # Clear to zero
+    else:
+        accum = int(accum)
+
+    # Account for difference in effective rate due to rounding of accel/2:
+    rate_effective = rate + mpmath.mpf(accel) / 2 - half_accel
+
+    # Total accumulator value at end of move, if it were not restricted to in [0, 2^31):
+    accum_final = mpmath.mpf(accum) + rate_effective * time +\
                 mpmath.mpf(accel) * time * time / 2
 
-    pos_final = mpmath.floor(c_final / mpmath.mpf(2147483648)) # Divide by 2^31 to get steps
-    c_final -= 2147483648 * mpmath.mpf(pos_final)
+    pos_final = mpmath.floor(accum_final / mpmath.mpf(2147483648)) # Divide by 2^31 to get steps
+    accum_final -= 2147483648 * mpmath.mpf(pos_final)
 
-    return int(pos_final), int(c_final)
+    return int(pos_final), int(accum_final)
 
+
+def move_dist_t3(rate, accel, jerk, time, accum="clear"):
+    '''
+    Calculate motor step count and final accumulator value after a given number
+    of ISR time ticks, using the T3 command. Calculation is for one axis only.
+
+    Inputs: Rate factor rate, acceleration accel, jerk term jerk,
+            number of 40 us intervals time,
+            initial accumulator value (Default: "clear", or integer)
+
+    Accumulator value at T time ticks is given by:
+        Accum = R_eff * T + 0.5 * accel * T^2 + accum + jerk * t^3 /6
+        Steps = floor (Accum / 2^31)
+        Remainder = Accum - 2^31 * Steps
+
+    Return Step position, Final accumulator value
+    This calculation is valid for version 3.0+ of the EBB firmware.
+    '''
+    time = int(time)  # Ensure that the inputs are integer.
+    rate = int(rate)
+    accel = int(accel)
+    jerk = int(jerk)
+    if time == 0:
+        return 0, 0
+
+    mpmath.mp.dps = 30 # Set decimal precision of 30.
+
+    half_accel = int(accel / 2) # Rounds towards zero
+    jerk_over_six = int(jerk / 6) # Rounds towards zero
+
+    if accum == "clear": # Clear accumulator!
+        if rate + half_accel + jerk_over_six - jerk < 0: # rate AT STEP 1 is negative
+            accum = 2147483647  # Clear to 2^31 - 1
+        else:
+            accum = 0           # Clear to zero
+    else:
+        accum = int(accum)
+
+    # Account for difference in effective rate due to rounding of accel/2 - jerk/6:
+    rate_effective = rate + mpmath.mpf(accel)/2 - half_accel +\
+                        jerk_over_six - mpmath.mpf(jerk)/6
+
+    if abs(rate_effective - mpmath.mpf(rate)) < 0.01:
+        rate_effective = rate # Use integer value for cases where we can
+
+    # Total accumulator value at end of move, if it were not restricted to in [0, 2^31):
+    accum_final = mpmath.mpf(accum) + rate_effective * time +\
+                    mpmath.mpf(accel) * time * time / 2 +\
+                    mpmath.mpf(jerk) * time * time * time / 6
+    accum_final = round(accum_final) # Find nearest integer value
+
+
+    pos_final = mpmath.floor(accum_final / mpmath.mpf(2147483648)) # Divide by 2^31 to get steps
+    accum_final -= 2147483648 * mpmath.mpf(pos_final)
+
+    return int(pos_final), int(accum_final)
 
 
 def calculate_lm(steps, rate, accel, accum="clear"):
