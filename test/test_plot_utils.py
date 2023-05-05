@@ -190,7 +190,7 @@ class PlotUtilsTestCase(unittest.TestCase):
                         [(1.25, 1.25), (1.75, 1.75), (2, 2)]]
         processed_beziers = copy.deepcopy(orig_beziers)
 
-        plot_utils.subdivideCubicPath(processed_beziers, 0)
+        plot_utils.subdivideCubicPath(processed_beziers, .01)
 
         self.assertEqual(orig_beziers, processed_beziers)
 
