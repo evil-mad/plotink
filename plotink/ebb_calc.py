@@ -74,7 +74,7 @@ def move_dist_lt(rate, accel, time, accum="clear"):
         if temp_rate < 0:
             accum = 2147483647  # Clear to 2^31 - 1
         elif temp_rate == 0:                    # Special case, if rate==0 during first step
-            if temp_rate + accel < 0:           # Then, check rate at second step.
+            if accel < 0:           # Then, check rate at second step.
                 accum = 2147483647  # Clear to 2^31 - 1
     else:
         accum = int(accum)
@@ -200,8 +200,8 @@ def calculate_lm(steps, rate, accel, accum="clear"):
     if temp_rate < 0:
         initial_rate_negative = True
     elif temp_rate == 0:                    # Special case, if rate==0 during first step
-        if temp_rate + accel < 0:           # Then, check rate at second step.
-            initial_rate_negative = True    # (It cannot be zero for additional steps.)
+        if accel < 0:                       # Then, check rate at second step.
+            initial_rate_negative = True
 
     if accum == "clear": # Clear accumulator!
         if initial_rate_negative:
