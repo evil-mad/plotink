@@ -122,10 +122,17 @@ def move_dist_t3(rate, accel, jerk, time, accum="clear"):
     jerk_over_six = int(jerk / 6) # Rounds towards zero
 
     if accum == "clear": # Clear accumulator!
-        if rate + half_accel + jerk_over_six - jerk < 0: # rate AT STEP 1 is negative
+        accum = 0       # Clear to zero
+        temp_rate = rate - half_accel + jerk_over_six + accel
+        if temp_rate < 0:  # Rate at step 1, as first added to accumulator, is < 0.
             accum = 2147483647  # Clear to 2^31 - 1
-        else:
-            accum = 0           # Clear to zero
+        elif temp_rate == 0:            # Special case: rate==0 during 1st step
+            temp_rate = accel + jerk        # Rate at step 2 (if rate at step 1 is zero)
+            if temp_rate < 0:               # If the new rate < 0...
+                accum = 2147483647          # Clear to 2^31 - 1
+            elif temp_rate == 0:        # Special case: rate==0 during 2nd step too!
+                if jerk < 0:                # If the rate at the 3rd step is < 0...
+                    accum = 2147483647      # Clear to 2^31 - 1
     else:
         accum = int(accum)
 
