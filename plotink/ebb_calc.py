@@ -69,10 +69,13 @@ def move_dist_lt(rate, accel, time, accum="clear"):
     half_accel = int(accel / 2) # Rounds towards zero
 
     if accum == "clear": # Clear accumulator!
-        if rate + half_accel < 0: # rate AT STEP 1 is negative
+        accum = 0       # Clear to zero
+        temp_rate = rate - int(accel / 2) + accel # Rate at step 1, as first added to accumulator
+        if temp_rate < 0:
             accum = 2147483647  # Clear to 2^31 - 1
-        else:
-            accum = 0           # Clear to zero
+        elif temp_rate == 0:                    # Special case, if rate==0 during first step
+            if temp_rate + accel < 0:           # Then, check rate at second step.
+                accum = 2147483647  # Clear to 2^31 - 1
     else:
         accum = int(accum)
 
@@ -186,8 +189,12 @@ def calculate_lm(steps, rate, accel, accum="clear"):
     rate_effective = rate + mpmath.mpf(accel) / 2 - int(accel/2)
 
     initial_rate_negative = False
-    if rate + int(accel / 2) < 0: # rate at step 1, when first added to accumulator
+    temp_rate = rate - int(accel / 2) + accel # Rate at step 1, as first added to accumulator
+    if temp_rate < 0:
         initial_rate_negative = True
+    elif temp_rate == 0:                    # Special case, if rate==0 during first step
+        if temp_rate + accel < 0:           # Then, check rate at second step.
+            initial_rate_negative = True    # (It cannot be zero for additional steps.)
 
     if accum == "clear": # Clear accumulator!
         if initial_rate_negative:
@@ -221,7 +228,7 @@ def calculate_lm(steps, rate, accel, accum="clear"):
     # Calculate final position. And, adjusted final position, with step position rounded
     #   "back" by 1, in cases where direction reverses. This correction means that we look
     #   for the *first* time step at the target position, not the *last*.
-    if (t_rev < 1) or (s_rev >= steps): # Reversal before T = 1 or after end of move
+    if (t_rev <= 1) or (s_rev >= steps): # Reversal by first step or after end of move
         t_rev = -1 # Set flag: No direction reversal during this move.
         if initial_rate_negative:
             pos_final = -steps
@@ -254,6 +261,7 @@ def calculate_lm(steps, rate, accel, accum="clear"):
         # -> T = (-b +/- sqrt(b^2 - 4 a c)) / 2 a,
         #   with a = accel/2, b = effective rate, C = C_0 - pos_f_adj * @^31
 
+        time_final_star = 0 # Fallback, if no solutions are found.
         two_a = mpmath.mpf(accel) # 2 * a = 2 * accel/2
         c_factor = accum_adj - mpmath.mpf(pos_f_adj) * 2147483648
         discriminant = rate_effective * rate_effective - 2 * two_a * c_factor # b^2 - 4 a c
