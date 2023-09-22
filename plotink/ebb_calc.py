@@ -92,13 +92,12 @@ def move_dist_lt(rate, accel, time, accum="clear"):
     return int(pos_final), int(accum_final)
 
 
-def move_dist_t3(rate, accel, jerk, time, accum="clear"):
+def move_dist_t3(time, rate, accel, jerk, accum="clear"):
     '''
-    Calculate motor step count and final accumulator value after a given number
+    Calculate final motor step count and accumulator value after a given number
     of ISR time ticks, using the T3 command. Calculation is for one axis only.
 
-    Inputs: Rate factor rate, acceleration accel, jerk term jerk,
-            number of 40 us intervals time,
+    Inputs: Number of 40 us intervals time, initial rate, accel, jerk,
             initial accumulator value (Default: "clear", or integer)
 
     Accumulator value at T time ticks is given by:
