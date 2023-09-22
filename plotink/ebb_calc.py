@@ -38,7 +38,7 @@ import mpmath
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.1"  # Dated 2023-05-04
+    return "0.1"  # Dated 2023-09-21
 
 
 def move_dist_lt(rate, accel, time, accum="clear"):
@@ -102,8 +102,8 @@ def move_dist_t3(rate, accel, jerk, time, accum="clear"):
             initial accumulator value (Default: "clear", or integer)
 
     Accumulator value at T time ticks is given by:
-        Accum = R_eff * T + 0.5 * accel * T^2 + accum + jerk * t^3 /6
-        Steps = floor (Accum / 2^31)
+        Accum = R_eff * T + 0.5 * accel * T^2 + accum + jerk * T^3 /6
+        Steps = floor(Accum / 2^31)
         Remainder = Accum - 2^31 * Steps
 
     Return Step position, Final accumulator value
@@ -154,6 +154,26 @@ def move_dist_t3(rate, accel, jerk, time, accum="clear"):
     accum_final -= 2147483648 * mpmath.mpf(pos_final)
 
     return int(pos_final), int(accum_final)
+
+
+def rate_t3(time, rate, accel, jerk):
+    '''
+    Calculate final rate after a T3 command, for one axis.
+
+    Inputs: number of 40 us intervals time, initial rate, accel, jerk
+
+    Return rate value at T time ticks, given approximately by:
+        Rate = Rate_initial + accel * T + accum + jerk * T^2 /2
+        Some fine-tuned corrections give the actual value.
+    '''
+    time = int(time)  # Ensure that the inputs are integer.
+
+    if time == 0:
+        return rate
+
+    return round(int(rate) - int(accel / 2) + int(jerk / 6) +\
+                (int(accel) - jerk/2) * time + jerk * time * time / 2)
+
 
 
 def calculate_lm(steps, rate, accel, accum="clear"):
