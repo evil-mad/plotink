@@ -165,14 +165,43 @@ def rate_t3(time, rate, accel, jerk):
         Rate = Rate_initial + accel * T + accum + jerk * T^2 /2
         Some fine-tuned corrections give the actual value.
     '''
-    time = int(time)  # Ensure that the inputs are integer.
+    time = int(time)  # Use "ints" to ensure that the inputs are integer.
 
     if time == 0:
-        return rate
+        return rate + accel + jerk
 
     return round(int(rate) - int(accel / 2) + int(jerk / 6) +\
                 (int(accel) - jerk/2) * time + jerk * time * time / 2)
 
+
+def max_rate_t3(time, rate, accel, jerk):
+    '''
+    Calculate maximum rate during a T3 command, for one axis.
+    Inputs: number of 40 us intervals time, initial rate, accel, jerk
+    Return absolute value of maximum rate.
+
+    Rate at a given time is: int(rate) - int(accel / 2) + int(jerk / 6) +\
+                (int(accel) - jerk/2) * time + jerk * time * time / 2
+    Set derivative equal to zero, to find time where min/max occurs:
+        0 = (int(accel) - jerk/2) + jerk * t_max
+        -> t_flat = (int(accel) - jerk/2) / jerk
+        If t_flat is in (0, time) interval, find v at time t_flat.
+    '''
+    time = int(time)  # Ensure that the inputs are integer.
+    v_start = abs(rate_t3(1, rate, accel, jerk))
+    if time <= 1:
+        return v_start
+    v_end = abs(rate_t3(time, rate, accel, jerk))
+
+    if jerk == 0:
+        return max(v_start, v_end)
+
+    t_mid = round(int(accel) - jerk/2) / jerk
+    if 1.5 < t_mid < (time - 1.5):
+        v_mid = abs(rate_t3(math.ceil(t_mid), rate, accel, jerk))
+        return max(v_start, v_end ,v_mid)
+
+    return max(v_start, v_end)
 
 
 def calculate_lm(steps, rate, accel, accum="clear"):
