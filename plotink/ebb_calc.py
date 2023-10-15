@@ -196,7 +196,7 @@ def max_rate_t3(time, rate, accel, jerk):
     if jerk == 0:
         return max(v_start, v_end)
 
-    t_mid = round(jerk/2 - int(accel)) / jerk
+    t_mid = (jerk/2 - accel) / jerk
 
     if 1.5 < t_mid < (time - 1.5):
         v_mid = abs(rate_t3(math.ceil(t_mid), rate, accel, jerk))
