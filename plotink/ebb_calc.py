@@ -180,12 +180,12 @@ def max_rate_t3(time, rate, accel, jerk):
     Inputs: number of 40 us intervals time, initial rate, accel, jerk
     Return absolute value of maximum rate.
 
-    Rate at a given time is: int(rate) - int(accel / 2) + int(jerk / 6) +\
-                (int(accel) - jerk/2) * time + jerk * time * time / 2
+    Discrete time approach gives R(T) = r_e + a_e T + J (T^2 + T)/2,
+        with effective rate r_e = rate - int(accel/2) + int(jerk/6)
+            effective accel a_e = accel - jerk
     Set derivative equal to zero, to find time where min/max occurs:
-        0 = (int(accel) - jerk/2) + jerk * t_max
-        -> t_flat = (int(accel) - jerk/2) / jerk
-        If t_flat is in (0, time) interval, find v at time t_flat.
+        R'(T) = 0 = 0 + a_e + (J/2)(2T + 1) = A - J + JT + J/2 = A - J/2 + JT
+        -> T = (J/2 - A)/J
     '''
     time = int(time)  # Ensure that the inputs are integer.
     v_start = abs(rate_t3(1, rate, accel, jerk))
@@ -196,7 +196,8 @@ def max_rate_t3(time, rate, accel, jerk):
     if jerk == 0:
         return max(v_start, v_end)
 
-    t_mid = round(int(accel) - jerk/2) / jerk
+    t_mid = round(jerk/2 - int(accel)) / jerk
+
     if 1.5 < t_mid < (time - 1.5):
         v_mid = abs(rate_t3(math.ceil(t_mid), rate, accel, jerk))
         return max(v_start, v_end ,v_mid)
