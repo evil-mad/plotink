@@ -12,7 +12,7 @@ See version() below for version number.
 
 The MIT License (MIT)
 
-Copyright (c) 2023 Windell H. Oskay, Evil Mad Scientist Laboratories
+Copyright (c) 2024 Windell H. Oskay, Bantam Tools
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,13 +33,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+__version__ = "1.0"  # Dated 2024-04-03
+
 import math
 import mpmath
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.1"  # Dated 2023-09-21
-
+    return __version__
 
 def move_dist_lt(rate, accel, time, accum="clear"):
     '''
@@ -164,6 +165,13 @@ def rate_t3(time, rate, accel, jerk):
     Return rate value at T time ticks, given approximately by:
         Rate = Rate_initial + accel * T + accum + jerk * T^2 /2
         Some fine-tuned corrections give the actual value.
+
+    Note on time convention: A move will always be at least one interval long;
+        the rate after one interval is given when time T = 1. A rate after
+        zero intervals (T=0) would be the theoretical value of the rate
+        *before* the T3 move begins.
+
+    Rate should never be allowed to exceed 2^31 - 1 ( 2147483647 ).
     '''
     time = int(time)  # Use "ints" to ensure that the inputs are integer.
 
@@ -186,6 +194,8 @@ def max_rate_t3(time, rate, accel, jerk):
     Set derivative equal to zero, to find time where min/max occurs:
         R'(T) = 0 = 0 + a_e + (J/2)(2T + 1) = A - J + JT + J/2 = A - J/2 + JT
         -> T = (J/2 - A)/J
+
+    Rate should not exceed 2^31 - 1 ( 2147483647 ).
     '''
     time = int(time)  # Ensure that the inputs are integer.
     v_start = abs(rate_t3(1, rate, accel, jerk))
