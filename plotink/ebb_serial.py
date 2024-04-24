@@ -14,7 +14,7 @@ Thanks to Shel Michaels for bug fixes and helpful suggestions.
 
 The MIT License (MIT)
 
-Copyright (c) 2022 Windell H. Oskay, Evil Mad Scientist Laboratories
+Copyright (c) 2024 Windell H. Oskay, Bantam tools
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,12 +48,12 @@ logger = logging.getLogger(__name__)
 
 def version():
     '''Version number for this document'''
-    return "0.19"   # Dated 2022-10-05
+    return "0.20"   # Dated 2024-04-29
 
 
 def findPort():
     '''
-    Find first available EiBotBoard by searching USB ports. Return serial port object.
+    Find first available EiBotBoard by searching USB ports. Return serial port name.
     '''
     try:
         com_ports_list = list(comports())
@@ -268,7 +268,7 @@ def list_named_ebbs():
 
 def testPort(port_name):
     """
-    Open a given serial port, verify that it is an EiBotBoard,
+    Open a specific serial port with name port_name, verify that it is an EiBotBoard,
     and return a SerialPort object that we can reference later.
 
     This routine only opens the port; it will need to be closed as well,

@@ -16,13 +16,13 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='plotink',
-    version='1.9.0',
+    version='1.10.0',
     python_requires='>=3.6.0',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/evil-mad/plotink',
-    author='Evil Mad Scientist Laboratories',
-    author_email='contact@evilmadscientist.com',
+    author='Bantam Tools',
+    author_email='hello@bantamtools.com',
     description="Helper routines for use with plotters",
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
