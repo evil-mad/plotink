@@ -1,10 +1,11 @@
 '''
 ebb3_serial.py
+
 Serial connection utilities for EiBotBoard, firmware v3 and newer
 https://github.com/evil-mad/plotink
 
 Intended to provide some common interfaces that can be used by
-NextDraw, EggBot, WaterColorBot, AxiDraw, and similar machines.
+Bantam Tools NextDraw, EggBot, WaterColorBot, AxiDraw, and similar machines.
 
 See __version__ below for version information
 
@@ -343,6 +344,12 @@ class EBB3:
             self.port.write((cmd + '\r').encode('ascii'))
             response = self.port.readline().decode('ascii').strip()
 
+            n_retry_count = 0
+            while len(response) == 0 and n_retry_count < 25:
+                # get new response to replace null response if necessary
+                response = self.port.readline().decode('ascii').strip()
+                n_retry_count += 1
+
             if not response.startswith(cmd_name):
                 if response:
                     error_msg = '\nUnexpected response from EBB.' +\
@@ -362,7 +369,6 @@ class EBB3:
             self.record_error(error_msg)
 
         return bool(self.first_err is None) # Return True if no error, False if error.
-
 
 
 
@@ -393,13 +399,13 @@ class EBB3:
             self.port.write((qry + '\r').encode('ascii'))
             response = self.port.readline().decode('ascii').strip()
 
-            if not response.startswith(qry_name):
-                if response:
-                    error_msg = '\nUnexpected response from EBB.' +\
-                       f'    Query: {qry}\n    Response: {response}'
-                else:
-                    error_msg = f'EBB Serial Timeout after query: {qry}'
-                self.record_error(error_msg)
+            n_retry_count = 0
+            while len(response) == 0 and n_retry_count < 25:
+                # get new response to replace null response if necessary
+                response = self.port.readline().decode('ascii').strip()
+                n_retry_count += 1
+
+
 
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
@@ -407,9 +413,12 @@ class EBB3:
                 self.record_error(error_msg)
                 return None
 
-        if 'Err:' in response:
-            error_msg = 'Error reported by EBB.\n' +\
-               f'    Query: {qry}\n    Response: {response}'
+        if ('Err:' in response) or (not response.startswith(qry_name)):
+            if response:
+                error_msg = '\nUnexpected response from EBB.' +\
+                   f'    Query: {qry}\n    Response: {response}'
+            else:
+                error_msg = f'EBB Serial Timeout after query: {qry}'
             self.record_error(error_msg)
             return None
 
@@ -457,7 +466,6 @@ class EBB3:
             return None
 
         return int(int(response[3:], 16)) # Strip off query name ("QG,") and conver to int.
-
 
 
 
