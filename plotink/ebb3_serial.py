@@ -189,15 +189,35 @@ class EBB3:
         self.version_parsed = parse(ebb_version_string)
 
 
-    def query_nickname(self, port_name):
-        '''
-        Query the EBB nickname and use it to fill self.name
-        '''
+    def query_nickname(self):
+        ''' Query the EBB nickname and use it to fill self.name  '''
         if self.port is None:
             return
-        raw_string = self.query(port_name, 'QT\r')
+        raw_string = self.query('QT')
         if not raw_string.isspace():
             self.name = str(raw_string).strip()
+
+
+
+    def write_nickname(self, nickname):
+        ''' 
+            Write the EBB nickname. Update self.name 
+            Return True on apparent success. Return False on error.
+        '''
+
+        if (self.port is None) or (self.first_err is not None) or (nickname is None):
+            return False
+
+        nickname = nickname.strip()
+        if not bool(nickname): # Return on empty or None nickname.
+            return False
+
+        try:
+            self.command('ST,' + nickname)
+            self.name = nickname
+            return True
+        except (serial.SerialException, serial.serialutil.PortNotOpenError):
+            return False
 
 
     def disconnect(self):
@@ -276,8 +296,7 @@ class EBB3:
         self.port.readline()   # Ignore response, which may be in legacy or future syntax
         self.port.reset_input_buffer()                # clear input buffer
 
-
-
+        self.query_nickname()
 
         return True
 
@@ -299,7 +318,7 @@ class EBB3:
 
 
 
-    def command(self, cmd, verbose=False):
+    def command(self, cmd):
         '''
         Send a command to the EBB.
         All commands will be sent to the EBB, as cmd + '\r'.
@@ -332,11 +351,9 @@ class EBB3:
                     error_msg = f'EBB Serial Timeout after command: {cmd}'
                 self.record_error(error_msg)
 
-        except (serial.SerialException, IOError, RuntimeError, OSError) as err:
+        except (serial.SerialException, IOError, RuntimeError, OSError):
             if cmd_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after command: {cmd}'
-                if verbose:
-                    error_msg += f"\nError context:{err}"
                 self.record_error(error_msg)
 
         if 'Err:' in response:
@@ -347,7 +364,9 @@ class EBB3:
         return bool(self.first_err is None) # Return True if no error, False if error.
 
 
-    def query(self, qry, verbose=False):
+
+
+    def query(self, qry):
         '''
         General function to send a query to the EiBotBoard. Like command, but returns a reponse.
         Works using the EBB 3 "future" syntax only. Responses are returned with the query prefix
@@ -382,11 +401,9 @@ class EBB3:
                     error_msg = f'EBB Serial Timeout after query: {qry}'
                 self.record_error(error_msg)
 
-        except (serial.SerialException, IOError, RuntimeError, OSError) as err:
+        except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after query: {qry}'
-                if verbose:
-                    error_msg += f"\nError context:{err}"
                 self.record_error(error_msg)
                 return None
 
@@ -404,70 +421,42 @@ class EBB3:
         return response[header_len:] # Strip off leading repetition of command name.
 
 
-def query_nickname(port_name, verbose=True):
-    '''
-    Query the EBB nickname and report it.
-    If verbose is True or omitted, the result will be human readable.
-    A short version is returned if verbose is False.
-    Requires firmware version 2.5.5 or newer. http://evil-mad.github.io/EggBot/ebb.html#QT
-    '''
-    if port_name is not None:
-        version_status = min_version(port_name, "2.5.5")
+    def query_qg_status(self):
+        '''
+        Special function to manage the `QG` query and return an integer representing
+        the contents of the status byte.
+        '''
 
-        if version_status:
-            raw_string = query(port_name, 'QT\r')
-            if raw_string.isspace():
-                if verbose:
-                    return "This AxiDraw does not have a nickname assigned."
-                return None
-            if verbose:
-                return "AxiDraw nickname: " + raw_string
-            return str(raw_string).strip()
-        if version_status is False:
-            if verbose:
-                return "AxiDraw naming requires firmware version 2.5.5 or higher."
-    return None
+        if self.port_name is None:
+            return None
 
+        qry = "QG" # Remove leading, trailing whitespace, if any.
 
-def write_nickname(port_name, nickname):
-    '''
-    Write the EBB nickname.
-    Requires firmware version 2.5.5 or newer. http://evil-mad.github.io/EggBot/ebb.html#ST
-    '''
-    if port_name is not None:
-        version_status = min_version(port_name, "2.5.5")
+        response = ''
+        try:
+            self.port.write('QG\r'.encode('ascii'))
+            response = self.port.readline().decode('ascii').strip()
 
-        if version_status:
-            try:
-                cmd = 'ST,' + nickname + '\r'
-                command(port_name,cmd)
-                return True
-            except:
-                return False
-    return None
+            if not response.startswith('QG'):
+                if response:
+                    error_msg = '\nUnexpected response from EBB.' +\
+                       f'    Response to QG query: {response}'
+                else:
+                    error_msg = 'EBB Serial Timeout while reading status byte.'
+                self.record_error(error_msg)
 
+        except (serial.SerialException, IOError, RuntimeError, OSError):
+            error_msg = f'USB communication error after query: {qry}'
+            self.record_error(error_msg)
+            return None
 
+        if 'Err:' in response:
+            error_msg = 'Error reported by EBB.\n' +\
+               f'    Query: QG\n    Response: {response}'
+            self.record_error(error_msg)
+            return None
 
-
-
-def list_port_info():
-    '''Find and return a list of all USB devices and their information.'''
-    try:
-        com_ports_list = list(comports())
-    except TypeError:
-        return None
-
-    port_info_list = []
-    for port in com_ports_list:
-        port_info_list.append(port[0]) # port name
-        port_info_list.append(port[1]) # Identifier
-        port_info_list.append(port[2]) # VID/PID
-    if port_info_list:
-        return port_info_list
-    return None
-
-
-
+        return int(int(response[3:], 16)) # Strip off query name ("QG,") and conver to int.
 
 
 
@@ -517,18 +506,6 @@ def list_named_ebbs():
             if 'SER=' in p_2 and ' LOCAT' in p_2:
                 index1 = p_2.find('SER=') + len('SER=')
                 index2 = p_2.find(' LOCAT', index1)
-                temp_string = p_2[index1:index2]
-                if len(temp_string) < 3:
-                    temp_string = None
-                if temp_string is not None:
-                    ebb_names_list.append(temp_string)
-                    name_found = True
-        if not name_found:
-            # Look for "...SNR=XXXX" pattern,
-            #  typical of Pyserial 2.7 on Windows
-            if 'SNR=' in p_2:
-                index1 = p_2.find('SNR=') + len('SNR=')
-                index2 = len(p_2)
                 temp_string = p_2[index1:index2]
                 if len(temp_string) < 3:
                     temp_string = None
