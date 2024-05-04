@@ -47,10 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 class EBB3:
-    ''' 
-    ebb3: Class for managing EiBotBoard connectivity.
-    Requires EBB firmware version 3.0.1 or newer.
-    '''
+    ''' EBB3: Class for managing EiBotBoard connectivity '''
 
     MIN_VERSION_STRING = "3.0.1"    # Minimum supported EBB firmware version.
 
@@ -60,7 +57,7 @@ class EBB3:
         self.version = None         # EBB firmware version string (human readable), if known
         self.version_parsed = None  # Parsed EBB firmware version, if known
         self.name = None            # EBB "nickname," if known
-        self.first_err = None       # String giving first error message, or None.
+        self.err = None             # None, or a string giving first fatal error message.
 
     def find_first(self):
         '''
@@ -129,12 +126,15 @@ class EBB3:
     def reboot(self):
         ''' 
         Reboot the EBB, as though it were just powered on.
-        Return True if (apparent) success, and False otherwise. Do not read back data.
+        Return True if (apparent) success, and False otherwise.
+        Close port; Do not read back data.
         '''
-        if self.port is None:
+
+        if (self.port is None) or (self.err is not None):
             return False
         try:
             self.port.write('RB\r'.encode('ascii'))
+            self.disconnect()
             return True
         except (serial.SerialException, serial.serialutil.PortNotOpenError):
             return False
@@ -143,12 +143,14 @@ class EBB3:
     def bootload(self):
         ''' 
         Put the EBB into bootloader mode.
-        Return True if (apparent) success, and False otherwise. Do not read back data.
+        Return True if (apparent) success, and False otherwise.
+        Close port; Do not read back data.
         '''
-        if self.port is None:
+        if (self.port is None) or (self.err is not None):
             return False
         try:
             self.port.write('BL\r'.encode('ascii'))
+            self.disconnect()
             return True
         except (serial.SerialException, serial.serialutil.PortNotOpenError):
             return False
@@ -156,8 +158,8 @@ class EBB3:
 
     def record_error(self, message):
         ''' Record error, if it is the first error '''
-        if self.first_err is None:
-            self.first_err = message
+        if self.err is None:
+            self.err = message
 
 
     def _get_port_name(self, given_name=None):
@@ -192,11 +194,12 @@ class EBB3:
 
     def query_nickname(self):
         ''' Query the EBB nickname and use it to fill self.name  '''
-        if self.port is None:
+        if (self.port is None) or (self.err is not None):
             return
         raw_string = self.query('QT')
-        if not raw_string.isspace():
-            self.name = str(raw_string).strip()
+        if raw_string is not None:
+            if not raw_string.isspace():
+                self.name = str(raw_string).strip()
 
 
 
@@ -206,7 +209,7 @@ class EBB3:
             Return True on apparent success. Return False on error.
         '''
 
-        if (self.port is None) or (self.first_err is not None) or (nickname is None):
+        if (self.port is None) or (self.err is not None) or (nickname is None):
             return False
 
         nickname = nickname.strip()
@@ -322,13 +325,12 @@ class EBB3:
     def command(self, cmd):
         '''
         Send a command to the EBB.
-        All commands will be sent to the EBB, as cmd + '\r'.
         Returns True if command apparently successful.
         Returns False if an error is encountered;
-            First error encountered will be written to self.first_err.
+            First error encountered will be written to self.err.
         '''
 
-        if (self.port_name is None) or (cmd is None):
+        if (self.port is None) or (self.err is not None) or (cmd is None):
             return False
 
         cmd = cmd.strip() # Remove leading, trailing whitespace, if any.
@@ -368,7 +370,7 @@ class EBB3:
                f'    Command: {cmd}\n    Response: {response}'
             self.record_error(error_msg)
 
-        return bool(self.first_err is None) # Return True if no error, False if error.
+        return bool(self.err is None) # Return True if no error, False if error.
 
 
 
@@ -379,10 +381,10 @@ class EBB3:
             and whitespace removed, so if the `QG` command would return `QG,3E<NL>`, this
             function returns only `3E`.
         Returns None if an error is encountered.
-            First error encountered will be written to self.first_err.
+            First error encountered will be written to self.err.
         '''
 
-        if (self.port_name is None) or (qry is None):
+        if (self.port is None) or (self.err is not None) or (qry is None):
             return None
 
         qry = qry.strip() # Remove leading, trailing whitespace, if any.
@@ -404,8 +406,6 @@ class EBB3:
                 # get new response to replace null response if necessary
                 response = self.port.readline().decode('ascii').strip()
                 n_retry_count += 1
-
-
 
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
@@ -436,7 +436,7 @@ class EBB3:
         the contents of the status byte.
         '''
 
-        if self.port_name is None:
+        if (self.port is None) or (self.err is not None):
             return None
 
         qry = "QG" # Remove leading, trailing whitespace, if any.
@@ -468,6 +468,29 @@ class EBB3:
         return int(int(response[3:], 16)) # Strip off query name ("QG,") and conver to int.
 
 
+
+    def variable_write(self, ebb_lv, index=None):
+        """
+        Set the EBB "Layer" Variable, an 8-bit number we can read and write.
+        (Unrelated to document layers; name is an historical artifact.)
+        """
+        if port_name is not None:
+            self.command(port_name, 'SL,{0}\r'.format(ebb_lv))
+    
+    
+    def queryEBBLV(self):
+        """
+        Query the EBB "Layer" Variable, an 8-bit number we can read and write.
+        (Unrelated to document layers; name is an historical artifact.)
+        """
+        if port_name is not None:
+            value = self.query(port_name, 'QL\r')
+            try:
+                ret_val = int(value)
+                return ret_val
+            except:
+                return None
+        return None
 
 
 def list_ebb_ports():
@@ -523,3 +546,4 @@ def list_named_ebbs():
         if not name_found:
             ebb_names_list.append(p_0)
     return ebb_names_list
+
