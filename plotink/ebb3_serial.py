@@ -35,15 +35,12 @@ SOFTWARE.
 
 __version__ = '0.1'  # Dated 2024-4-29
 
-import logging
 from packaging.version import parse, InvalidVersion
 
 from .plot_utils_import import from_dependency_import
 serial = from_dependency_import('serial')
 from serial.tools.list_ports import comports \
     #pylint: disable=wrong-import-position, wrong-import-order
-
-logger = logging.getLogger(__name__)
 
 
 class EBB3:
@@ -430,7 +427,7 @@ class EBB3:
         return response[header_len:] # Strip off leading repetition of command name.
 
 
-    def query_qg_status(self):
+    def query_statusbyte(self):
         '''
         Special function to manage the `QG` query and return an integer representing
         the contents of the status byte.
@@ -468,29 +465,98 @@ class EBB3:
         return int(int(response[3:], 16)) # Strip off query name ("QG,") and conver to int.
 
 
+    def var_write(self, value, index):
+        """
+        Store a variable in (volatile) EBB RAM using SL command.
 
-    def variable_write(self, ebb_lv, index=None):
+        value is an integer between 0 and 255.
+        index is an integer between 0 and 31.
+
+        Values can be read with var_read().
+        Return True on apparent success, False on apparent failure.
         """
-        Set the EBB "Layer" Variable, an 8-bit number we can read and write.
-        (Unrelated to document layers; name is an historical artifact.)
+        if (self.port is None) or (self.err is not None):
+            return False
+
+        self.command(f'SL,{value},{index}')
+
+        if self.err is not None:
+            return False
+        return True
+
+    def var_read(self, index):
         """
-        if port_name is not None:
-            self.command(port_name, 'SL,{0}\r'.format(ebb_lv))
-    
-    
-    def queryEBBLV(self):
+        Read a variable from (volatile) EBB RAM using QL command.
+        index is an integer between 0 and 31.
+
+        Values can be written with var_write().
+
+        Return value read on apparent success, None on apparent failure.
         """
-        Query the EBB "Layer" Variable, an 8-bit number we can read and write.
-        (Unrelated to document layers; name is an historical artifact.)
+        if (self.port is None) or (self.err is not None):
+            return None
+
+        value = self.query(f'QL,{index}')
+
+        if self.err is not None:
+            return None
+        return int(value)
+
+    def var_write_int32(self, value, start_index):
         """
-        if port_name is not None:
-            value = self.query(port_name, 'QL\r')
-            try:
-                ret_val = int(value)
-                return ret_val
-            except:
-                return None
-        return None
+        Store a 4-byte variable in (volatile) EBB RAM, using four slots
+            of the RAM as addressed by var_write (SL command).
+
+        value is a signed 32-bit integer, -2147483648 to 2147483647.
+        start_index is an integer between 0 and 28.
+
+        The number will be stored as four 8-bit unsigned ints, at indices
+            start_index, start_index+1, start_index+2, start_index+3.
+
+        Values can be read with var_read_int32().
+        Return True on apparent success, False on apparent failure.
+        """
+        if (self.port is None) or (self.err is not None):
+            return False
+
+        bytes_sequence = value.to_bytes(4, byteorder='big', signed=True)
+
+        for byte in bytes_sequence:
+            self.var_write(byte, start_index)
+            start_index += 1
+
+        if self.err is not None:
+            return False
+        return True
+
+
+    def var_read_int32(self, start_index):
+        """
+        Read a 4-byte variable from (volatile) EBB RAM, using four slots
+            of the RAM as addressed by var_write (SL command).
+
+        start_index is an integer between 0 and 28.
+
+        The number will be read from four 8-bit unsigned ints, at indices
+            start_index, start_index+1, start_index+2, start_index+3.
+
+        Values can be written with var_write_int32().
+        Return a signed integer, on apparent success; Return None on error.
+        """
+        if (self.port is None) or (self.err is not None):
+            return False
+
+        bytes_sequence = []
+
+        for byte_offset in range(0,4):
+            value = self.var_read(start_index + byte_offset)
+            byte_offset += 1
+            bytes_sequence.append(value)
+
+        if self.err is not None:
+            return None
+        return int.from_bytes(bytes_sequence, byteorder='big', signed=True)
+
 
 
 def list_ebb_ports():
@@ -546,4 +612,3 @@ def list_named_ebbs():
         if not name_found:
             ebb_names_list.append(p_0)
     return ebb_names_list
-
