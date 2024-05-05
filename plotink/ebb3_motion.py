@@ -305,6 +305,9 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         """
         Query the EBB motor power supply input voltage.
         Return True if power seems to be on, False if not. None on error.
+        This functon is for a spot check on voltage, not continuous
+            monitoring.
+        (The separate query_current() function can return an integer value.)
         """
         if (self.port is None) or (self.err is not None):
             return None
@@ -314,11 +317,30 @@ class EBBMotionWrap(ebb3_serial.EBB3):
             voltage_value = int(split_string[1])  # Pick second value only
         else:
             return None  # We haven't received a reasonable voltage string response.
-        if voltage_value < 250:
+        if voltage_value < 250: # Typical threshold, when using 9 V power supply.
             return False
         return True
 
+    def query_current(self):
+        """
+        Query the EBB motor current setpoint and voltage readouts,
+            return values as integers.
+        """
+        if (self.port is None) or (self.err is not None):
+            return None, None
+        split_string = self.query('QC').split(",", 1)
+        split_len = len(split_string)
+        if split_len > 1:
+            return int(split_string[0]), int(split_string[1])
+        return None, None
 
+    def clear_accumulators(self):
+        """
+        Set the two motion accumulators to zero.
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command('T3,1,0,0,0,0,0,0,3')
 
 
 

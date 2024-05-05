@@ -55,6 +55,7 @@ class EBB3:
         self.version_parsed = None  # Parsed EBB firmware version, if known
         self.name = None            # EBB "nickname," if known
         self.err = None             # None, or a string giving first fatal error message.
+        self.caller = None          # None, or a string indicating which program opened the port
 
     def find_first(self):
         '''
@@ -189,7 +190,7 @@ class EBB3:
         self.port = None
 
 
-    def connect(self, given_name=None):
+    def connect(self, given_name=None, caller=None):
         """
         Open a serial port, verify that it is an EiBotBoard.
         If so, save the SerialPort object in self.port and return True.
@@ -206,7 +207,12 @@ class EBB3:
         This routine only opens the port; it will need to be closed as well,
         for example with self.disconnect( ).
         You, who open the port, are responsible for closing it as well.
+            An optional "caller" argument allows you to label which application
+            called this function.
         """
+
+        if self.port is not None:
+            return True # Already connected and verified.
 
         self._get_port_name(given_name)
         if self.port_name is None:
@@ -256,7 +262,8 @@ class EBB3:
         self.port.reset_input_buffer()                # clear input buffer
 
         self.query_nickname()
-
+        if caller is not None:
+            self.caller = caller
         return True
 
 
