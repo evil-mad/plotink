@@ -126,7 +126,7 @@ class EBB3:
                 self.record_error("Unable to locate device on USB")
         else:
              # Try to locate named EBB
-            self.port_name = self.find_named(given_name)
+            self.port_name = find_named(given_name)
             if self.port_name is None:
                 self.record_error(f"Unable to locate {given_name} on USB")
 
@@ -387,8 +387,8 @@ class EBB3:
 
     def query_statusbyte(self):
         '''
-        Special function to manage the `QG` query and return an integer representing
-        the contents of the status byte.
+        Special function to manage the `QG` query and return an integer
+        representing the contents of the status byte.
         '''
 
         if (self.port is None) or (self.err is not None):
@@ -420,7 +420,7 @@ class EBB3:
             self.record_error(error_msg)
             return None
 
-        return int(int(response[3:], 16)) # Strip off query name ("QG,") and conver to int.
+        return int(response[3:], 16) # Strip off query name ("QG,") and convert to int.
 
 
     def var_write(self, value, index):
@@ -613,3 +613,4 @@ def find_named(port_name=None):
         needle.replace(" ", "_") # SN on Windows has underscores, not spaces.
         if needle in p_2:
             return port[0]  # Success; EBB found by port match.
+    return None
