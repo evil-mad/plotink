@@ -35,7 +35,6 @@ SOFTWARE.
 __version__ = '0.1'  # Dated 2024-3-18
 
 from . import ebb3_serial
-from . import ebb_calc
 
 class EBBMotionWrap(ebb3_serial.EBB3):
     ''' EBBMotionWrap: Wrapper class for managing EiBotBoard basic motion commands '''
@@ -225,99 +224,109 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         self.command(str_output)
 
 
+    def dio_b_config(self, pin, state, direction):
+        """
+        Enable an I/O pin on port b. 
+            Pin: 0-7, but typically one of 0-3. 
+            State: 0 or 1.
+            Direction: 0: output, 1: input
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command(f'PO,B,{pin},{state}')     # Set initial Bx pin value, high or low:
+        self.command(f'PD,B,{pin},{direction}') # Configure I/O pin as output or input
+
+
+    def dio_b_set(self, pin, state):
+        """
+        Set the value of an I/O pin on port b. 
+            Configure the pin with dio_b_config() before calling this.
+            Pin: 0-7, but typically one of 0-3. 
+            State: 0 or 1.
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command(f'PO,B,{pin},{state}')     # Set Bx pin value, high or low:
+
+    def dio_b_read(self, pin):
+        """
+        Read the value of an I/O pin on port b. 
+            Configure the pin with dio_b_config() before calling this.
+            Pin: 0-7, but typically one of 0-3. 
+            State: 0 or 1.
+        Return True or False, depending on pin value, or None in case of error.
+        """
+        if (self.port is None) or (self.err is not None):
+            return None
+        response = self.query(f'PI,B,{pin}')
+        if response is None:
+            return None
+        return bool(int(response))
 
 
 
 
-###################
+    def pen_pos_down(self, servo_max):
+        """ Set pen down position using SC http://evil-mad.github.io/EggBot/ebb.html#SC
+            servo_max may be in the range 1 to 65535, in units of 83 ns intervals.
+            This sets the "Pen Down" position.
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command(f"SC,5,{servo_max}")
+
+    def pen_pos_up(self, servo_min):
+        """ Set pen up position using SC http://evil-mad.github.io/EggBot/ebb.html#SC
+            servo_max may be in the range 1 to 65535, in units of 83 ns intervals.
+            This sets the "Pen Up" position.
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command(f"SC,4,{servo_min}")
+
+    def pen_rate_down(self, pen_down_rate):
+        """ Set pen lowering speed using SC
+            rate may be in the range 1 to 65535
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command(f"SC,12,{pen_down_rate}")
+
+    def pen_rate_up(self, pen_up_rate):
+        """ Set pen raising speed using SC
+            rate may be in the range 1 to 65535
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command(f"SC,11,{pen_up_rate}")
 
 
-
-def PBOutConfig(port_name, pin, state, verbose=True):
-    """
-    Enable an I/O pin. Pin: {0, 1, 2, or 3}. State: {0 or 1}.
-    Note that B0 is used as an alternate pause button input.
-    Note that B1 is used as the pen-lift servo motor output.
-    Note that B3 is used as the EggBot engraver output.
-    For use with a laser (or similar implement), pin 3 is recommended
-    """
-    if port_name is not None:
-        # Set initial Bx pin value, high or low:
-        str_output = 'PO,B,{0},{1}\r'.format(pin, state)
-        ebb_serial.command(port_name, str_output, verbose)
-        # Configure I/O pin Bx as an output
-        str_output = 'PD,B,{0},0\r'.format(pin)
-        ebb_serial.command(port_name, str_output, verbose)
-
-
-def PBOutValue(port_name, pin, state, verbose=True):
-    """
-    Set state of the I/O pin. Pin: {0,1,2, or 3}. State: {0 or 1}.
-    Set the pin as an output with OutputPinBConfigure before using this.
-    """
-    if port_name is not None:
-        str_output = 'PO,B,{0},{1}\r'.format(pin, state)
-        ebb_serial.command(port_name, str_output, verbose)
-
-
-def TogglePen(port_name, verbose=True):
-    """ Toggle pen state using TP """
-    if port_name is not None:
-        ebb_serial.command(port_name, 'TP\r', verbose)
-
-
-def setPenDownPos(port_name, servo_max, verbose=True):
-    """ Set pen down position using SC """
-    if port_name is not None:
-        ebb_serial.command(port_name, 'SC,5,{0}\r'.format(servo_max), verbose)
-        # servo_max may be in the range 1 to 65535, in units of 83 ns intervals.
-        # This sets the "Pen Down"position.
-        # http://evil-mad.github.io/EggBot/ebb.html#SC
-
-
-def setPenDownRate(port_name, pen_down_rate, verbose=True):
-    """ Set pen lowering speed using SC """
-    if port_name is not None:
-        ebb_serial.command(port_name, 'SC,12,{0}\r'.format(pen_down_rate), verbose)
-        # Set the rate of change of the servo when going down.
-        # http://evil-mad.github.io/EggBot/ebb.html#SC
-
-
-def setPenUpPos(port_name, servo_min, verbose=True):
-    """ Set pen up position using SC """
-    if port_name is not None:
-        ebb_serial.command(port_name, 'SC,4,{0}\r'.format(servo_min), verbose)
-        # servo_min may be in the range 1 to 65535, in units of 83 ns intervals.
-        # This sets the "Pen Up" position.
-        # http://evil-mad.github.io/EggBot/ebb.html#SC
-
-
-def setPenUpRate(port_name, pen_up_rate, verbose=True):
-    """ Set pen raising speed using SC """
-    if port_name is not None:
-        ebb_serial.command(port_name, 'SC,11,{0}\r'.format(pen_up_rate), verbose)
-        # Set the rate of change of the servo when going up.
-        # http://evil-mad.github.io/EggBot/ebb.html#SC
-
-
-
-
-
-def queryVoltage(port_name, verbose=True):
-    """ Query the EBB motor power supply input voltage. """
-    if port_name is not None:
-        if not ebb_serial.min_version(port_name, "2.2.3"):
-            return True # Unable to read version, or version is below 2.2.3.
-                        # In these cases, issue no voltage warning.
-        raw_string = ebb_serial.query(port_name, 'QC\r', verbose)
-        split_string = raw_string.split(",", 1)
+    def query_voltage(self):
+        """
+        Query the EBB motor power supply input voltage.
+        Return True if power seems to be on, False if not. None on error.
+        """
+        if (self.port is None) or (self.err is not None):
+            return None
+        split_string = self.query('QC').split(",", 1)
         split_len = len(split_string)
         if split_len > 1:
             voltage_value = int(split_string[1])  # Pick second value only
         else:
-            return True  # We haven't received a reasonable voltage string response.
-            # Ignore voltage test and return.
-        # Typical reading is about 300, for 9 V input.
+            return None  # We haven't received a reasonable voltage string response.
         if voltage_value < 250:
             return False
-    return True
+        return True
+
+
+
+
+
+
+
+    # Possibly implement this command...
+    # def pen_toggle(self):
+    #     """ Toggle pen state using TP """
+    #     if (self.port is None) or (self.err is not None):
+    #         return
+    #     self.command('TP')
