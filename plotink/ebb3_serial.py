@@ -77,48 +77,6 @@ class EBB3:
                     break               # stop searching-- we are done.
         self.port_name = ebb_port
 
-    def find_named(self, port_name=None):
-        '''
-        Find a specific EiBotBoard identified by a string giving either:
-               The enumerated serial port, or
-               An EBB "Name tag"
-        Names should be 3-16 characters long. Comparisons are not case sensitive.
-        (Name tags may assigned with the ST command.)
-        If found:     populate self.port_name
-        '''
-
-        if port_name is None:
-            return
-
-        needle = 'SER=' + port_name     # pyserial 3
-        needle2 = '(' + port_name + ')' # e.g., "(COM4)"
-
-        needle = needle.lower()
-        needle2 = needle2.lower()
-        plower = port_name.lower()
-
-        try:
-            com_ports_list = list(comports())
-        except TypeError:
-            return
-
-        for port in com_ports_list:
-            p_0 = port[0].lower()
-            p_1 = port[1].lower()
-            p_2 = port[2].lower()
-
-            if (needle in p_2) or (needle2 in p_1):
-                self.port_name = port[0]  # Success; EBB found by name match.
-                return
-
-            p_1 = p_1[11:]
-            if (p_1.startswith(plower)) or (p_0.startswith(plower)):
-                self.port_name = port[0]  # Success; EBB found by name match.
-                return
-
-            needle.replace(" ", "_") # SN on Windows has underscores, not spaces.
-            if needle in p_2:
-                self.port_name = port[0]  # Success; EBB found by port match.
 
     def reboot(self):
         ''' 
@@ -167,10 +125,10 @@ class EBB3:
             if self.port_name is None:
                 self.record_error("Unable to locate device on USB")
         else:
-            self.find_named(given_name) # Try to locate named EBB
+             # Try to locate named EBB
+            self.port_name = self.find_named(given_name)
             if self.port_name is None:
                 self.record_error(f"Unable to locate {given_name} on USB")
-
 
 
     def parse_version(self, ebb_version_string):
@@ -612,3 +570,46 @@ def list_named_ebbs():
         if not name_found:
             ebb_names_list.append(p_0)
     return ebb_names_list
+
+
+
+def find_named(port_name=None):
+    '''
+    Find a specific EiBotBoard identified by a string giving either:
+           The enumerated serial port, or
+           An EBB "Name tag"
+    Names should be 3-16 characters long. Comparisons are not case sensitive.
+    (Name tags may assigned with the ST command.)
+    If found:     return port_name (enumeration
+    '''
+
+    if port_name is None:
+        return None
+
+    needle = 'SER=' + port_name     # pyserial 3
+    needle2 = '(' + port_name + ')' # e.g., "(COM4)"
+
+    needle = needle.lower()
+    needle2 = needle2.lower()
+    plower = port_name.lower()
+
+    try:
+        com_ports_list = list(comports())
+    except TypeError:
+        return None
+
+    for port in com_ports_list:
+        p_0 = port[0].lower()
+        p_1 = port[1].lower()
+        p_2 = port[2].lower()
+
+        if (needle in p_2) or (needle2 in p_1):
+            return port[0]  # Success; EBB found by name match.
+
+        p_1 = p_1[11:]
+        if (p_1.startswith(plower)) or (p_0.startswith(plower)):
+            return port[0]  # Success; EBB found by name match.
+
+        needle.replace(" ", "_") # SN on Windows has underscores, not spaces.
+        if needle in p_2:
+            return port[0]  # Success; EBB found by port match.
