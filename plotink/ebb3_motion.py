@@ -301,6 +301,34 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         self.command(f"SC,11,{pen_up_rate}")
 
 
+
+    def servo_timeout(self, timeout_ms, state=None):
+        """
+        Set the EBB servo motor timeout, for old-style (brushed)
+            pen-lift servo motors.
+        The EBB will cut power to the pen-lift servo motor after a given
+        time delay since the last X/Y/Z motion command.
+        It can also optionally set an immediate on/off state.
+
+        The time delay timeout_ms is given in ms. A value of 0 will
+        disable the automatic power-off feature.
+
+        The state parameter is given as 0 or 1, to turn off or on
+        servo power immediately, respectively.
+
+        This feature requires EBB hardware v 2.5.0 or newer
+
+        Reference: http://evil-mad.github.io/EggBot/ebb.html#SR
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        if state is None:
+            str_output = f'SR,{timeout_ms}'
+        else:
+            str_output = f'SR,{timeout_ms},{state}'
+        self.command(str_output)
+
+
     def query_voltage(self):
         """
         Query the EBB motor power supply input voltage.
