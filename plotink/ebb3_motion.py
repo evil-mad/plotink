@@ -37,10 +37,14 @@ __version__ = '0.1'  # Dated 2024-3-18
 from . import ebb3_serial
 
 class EBBMotionWrap(ebb3_serial.EBB3):
-    ''' EBBMotionWrap: Wrapper class for managing EiBotBoard basic motion commands '''
+    ''' EBBMotionWrap: Wrapper class for managing low-level EiBotBoard
+        motion and data management commands and queries
+    '''
+    #pylint: disable=too-many-public-methods
 
     def __init__(self):
         ebb3_serial.EBB3.__init__(self)
+
 
     def timed_pause(self, pause_time):
         ''' "Hardware" pause on EBB control board, for pause_time milliseconds '''
@@ -55,6 +59,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
             self.command(f'SM,{time_delay},0,0')
             pause_time -= time_delay
 
+
     def xy_move(self, delta_x, delta_y, duration):
         '''
         Move X/Y axes as: "SM,<move_duration>,<axis1>,<axis2><CR>"
@@ -68,6 +73,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
 
         str_output = f'SM,{duration},{delta_y},{delta_x}'
         self.command(str_output)
+
 
     def abs_move(self, rate, position1=None, position2=None):
         '''
@@ -88,8 +94,6 @@ class EBBMotionWrap(ebb3_serial.EBB3):
             str_output = f'HM,{rate}'
         self.command(str_output)
 
-    # Note: QueryPenUp() is not present in this module; use QG instead.
-    # Note: QueryPRGButton() is not present in this module; use QG instead.
 
     def motors_disable(self):
         """ Disable stepper motors with EM command """
@@ -197,6 +201,25 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         result_list = result.strip().split(",")
         return int(result_list[0]), int(result_list[1])
 
+
+    def clear_steps(self):
+        """
+        Set the two step counters and motion accumulators to zero.
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command('CS')
+
+
+    def clear_accumulators(self):
+        """
+        Set the two motion accumulators to zero.
+        """
+        if (self.port is None) or (self.err is not None):
+            return
+        self.command('T3,1,0,0,0,0,0,0,3')
+
+
     def pen_lower(self, pen_delay, pin=None):
         """
         Lower pen with SP command
@@ -209,6 +232,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         else:
             str_output = f'SP,0,{pen_delay}'
         self.command(str_output)
+
 
     def pen_raise(self, pen_delay, pin=None):
         """
@@ -248,6 +272,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
             return
         self.command(f'PO,B,{pin},{state}')     # Set Bx pin value, high or low:
 
+
     def dio_b_read(self, pin):
         """
         Read the value of an I/O pin on port b. 
@@ -264,8 +289,6 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         return bool(int(response))
 
 
-
-
     def pen_pos_down(self, servo_max):
         """ Set pen down position using SC http://evil-mad.github.io/EggBot/ebb.html#SC
             servo_max may be in the range 1 to 65535, in units of 83 ns intervals.
@@ -274,6 +297,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         if (self.port is None) or (self.err is not None):
             return
         self.command(f"SC,5,{servo_max}")
+
 
     def pen_pos_up(self, servo_min):
         """ Set pen up position using SC http://evil-mad.github.io/EggBot/ebb.html#SC
@@ -284,6 +308,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
             return
         self.command(f"SC,4,{servo_min}")
 
+
     def pen_rate_down(self, pen_down_rate):
         """ Set pen lowering speed using SC
             rate may be in the range 1 to 65535
@@ -292,6 +317,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
             return
         self.command(f"SC,12,{pen_down_rate}")
 
+
     def pen_rate_up(self, pen_up_rate):
         """ Set pen raising speed using SC
             rate may be in the range 1 to 65535
@@ -299,7 +325,6 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         if (self.port is None) or (self.err is not None):
             return
         self.command(f"SC,11,{pen_up_rate}")
-
 
 
     def servo_timeout(self, timeout_ms, state=None):
@@ -349,6 +374,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
             return False
         return True
 
+
     def query_current(self):
         """
         Query the EBB motor current setpoint and voltage readouts,
@@ -361,22 +387,3 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         if split_len > 1:
             return int(split_string[0]), int(split_string[1])
         return None, None
-
-    def clear_accumulators(self):
-        """
-        Set the two motion accumulators to zero.
-        """
-        if (self.port is None) or (self.err is not None):
-            return
-        self.command('T3,1,0,0,0,0,0,0,3')
-
-
-
-
-
-    # Possibly implement this command...
-    # def pen_toggle(self):
-    #     """ Toggle pen state using TP """
-    #     if (self.port is None) or (self.err is not None):
-    #         return
-    #     self.command('TP')

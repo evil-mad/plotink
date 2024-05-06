@@ -57,6 +57,7 @@ class EBB3:
         self.err = None             # None, or a string giving first fatal error message.
         self.caller = None          # None, or a string indicating which program opened the port
 
+
     def find_first(self):
         '''
         Find first available EiBotBoard by searching USB ports.
@@ -156,7 +157,6 @@ class EBB3:
         if raw_string is not None:
             if not raw_string.isspace():
                 self.name = str(raw_string).strip()
-
 
 
     def write_nickname(self, nickname):
@@ -283,7 +283,6 @@ class EBB3:
         return False
 
 
-
     def command(self, cmd):
         '''
         Send a command to the EBB.
@@ -335,7 +334,6 @@ class EBB3:
         return bool(self.err is None) # Return True if no error, False if error.
 
 
-
     def query(self, qry):
         '''
         General function to send a query to the EiBotBoard. Like command, but returns a reponse.
@@ -344,6 +342,8 @@ class EBB3:
             function returns only `3E`.
         Returns None if an error is encountered.
             First error encountered will be written to self.err.
+        This function does not support the following query codes: 
+            "CK" (development test function), "A" (deprecated).
         '''
 
         if (self.port is None) or (self.err is not None) or (qry is None):
@@ -351,12 +351,17 @@ class EBB3:
 
         qry = qry.strip() # Remove leading, trailing whitespace, if any.
 
+        qry_name = qry
+
         if len(qry) == 1:
             qry_name = qry[0]       # Case of single-letter command/query
         elif qry[1] == ',':
             qry_name = qry[0]       # Case of single-letter command with arguments.
-        else:
-            qry_name = qry[0:2]     # All other cases: Command names are two letters long.
+        elif qry[0:2] != 'QU':
+            qry_name = qry[0:2]     # Cases except QU: Query responses are two letters long.
+
+        # For the special case of QU,where the query argument is included in response,
+        #   use the default qry_name, with the full query.
 
         response = ''
         try:
@@ -449,6 +454,7 @@ class EBB3:
             return False
         return True
 
+
     def var_read(self, index):
         """
         Read a variable from (volatile) EBB RAM using QL command.
@@ -466,6 +472,7 @@ class EBB3:
         if self.err is not None:
             return None
         return int(value)
+
 
     def var_write_int32(self, value, start_index):
         """
@@ -523,7 +530,6 @@ class EBB3:
         return int.from_bytes(bytes_sequence, byteorder='big', signed=True)
 
 
-
 def list_ebb_ports():
     '''Find and return a list of all EiBotBoard units connected via USB port.'''
 
@@ -577,7 +583,6 @@ def list_named_ebbs():
         if not name_found:
             ebb_names_list.append(p_0)
     return ebb_names_list
-
 
 
 def find_named(port_name=None):
