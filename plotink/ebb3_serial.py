@@ -46,7 +46,7 @@ from serial.tools.list_ports import comports \
 class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
-    MIN_VERSION_STRING = "3.0.1"    # Minimum supported EBB firmware version.
+    MIN_VERSION_STRING = "3.0.2"    # Minimum supported EBB firmware version.
 
     def __init__(self):
         self.port_name = None       # Port name (enumeration), if any
@@ -351,13 +351,11 @@ class EBB3:
 
         qry = qry.strip() # Remove leading, trailing whitespace, if any.
 
-        qry_name = qry
-
         if len(qry) == 1:
             qry_name = qry[0]       # Case of single-letter command/query
         elif qry[1] == ',':
             qry_name = qry[0]       # Case of single-letter command with arguments.
-        elif qry[0:2] != 'QU':
+        else:
             qry_name = qry[0:2]     # Cases except QU: Query responses are two letters long.
 
         # For the special case of QU,where the query argument is included in response,
