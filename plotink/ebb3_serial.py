@@ -404,8 +404,6 @@ class EBB3:
         if (self.port is None) or (self.err is not None):
             return None
 
-        qry = "QG" # Remove leading, trailing whitespace, if any.
-
         response = ''
         try:
             self.port.write('QG\r'.encode('ascii'))
@@ -420,7 +418,7 @@ class EBB3:
                 self.record_error(error_msg)
 
         except (serial.SerialException, IOError, RuntimeError, OSError):
-            error_msg = f'USB communication error after query: {qry}'
+            error_msg = 'USB communication error after status byte query'
             self.record_error(error_msg)
             return None
 
