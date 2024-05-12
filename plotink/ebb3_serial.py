@@ -358,9 +358,6 @@ class EBB3:
         else:
             qry_name = qry[0:2]     # Cases except QU: Query responses are two letters long.
 
-        # For the special case of QU,where the query argument is included in response,
-        #   use the default qry_name, with the full query.
-
         response = ''
         try:
             self.port.write((qry + '\r').encode('ascii'))
