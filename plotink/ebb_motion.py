@@ -1,18 +1,19 @@
-# coding=utf-8
 # ebb_motion.py
+'''
 
-"""
 Motion control utilities for EiBotBoard
 https://github.com/evil-mad/plotink
 
-Intended to provide some common interfaces that can be used by
-EggBot, WaterColorBot, AxiDraw, and similar machines.
+Intended to provide some common interfaces that can be used by the
+Bantam Tools NextDraw, as well as the EggBot, WaterColorBot, AxiDraw, and
+similar machines that use the EiBotBoard.
 
-See version() below for version number.
+See __version__ below for version information
+
 
 The MIT License (MIT)
 
-Copyright (c) 2023 Windell H. Oskay, Evil Mad Scientist Laboratories
+Copyright (c) 2024 Windell H. Oskay, Bantam Tools
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,14 +32,17 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-"""
+'''
+
+__version__ = '0.27'  # Dated 2024-05-13
+
 
 from . import ebb_serial
 from . import ebb_calc
 
 def version():  # Report version number for this document
     ''' Return version number '''
-    return "0.26"  # Dated 2023-05-04
+    return __version__
 
 def doABMove(port_name, delta_a, delta_b, duration, verbose=True):
     '''

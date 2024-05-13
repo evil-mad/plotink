@@ -1,20 +1,21 @@
-# coding=utf-8
 '''
 ebb_serial.py
+
 Serial connection utilities for EiBotBoard
 https://github.com/evil-mad/plotink
 
-Intended to provide some common interfaces that can be used by
-EggBot, WaterColorBot, AxiDraw, and similar machines.
+Intended to provide some common interfaces that can be used by the
+Bantam Tools NextDraw, as well as the EggBot, WaterColorBot, AxiDraw, and
+similar machines that use the EiBotBoard.
 
-See below for version information
+See __version__ below for version information
 
 Thanks to Shel Michaels for bug fixes and helpful suggestions.
 
 
 The MIT License (MIT)
 
-Copyright (c) 2024 Windell H. Oskay, Bantam tools
+Copyright (c) 2024 Windell H. Oskay, Bantam Tools
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +36,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
+__version__ = '0.3'  # Dated 2024-5-13
+
 import logging
 from packaging.version import parse
 
@@ -48,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 def version():
     '''Version number for this document'''
-    return "0.20"   # Dated 2024-04-29
+    return __version__
 
 
 def findPort():

@@ -1,45 +1,43 @@
-# -*- coding: utf-8 -*-
-# text_utils.py
-# Common text processing utilities
-# https://github.com/evil-mad/plotink
-#
-# See below for version information
-#
-# Copyright (c) 2021 Windell H. Oskay, Evil Mad Scientist Laboratories
-#
-# The MIT License (MIT)
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-"""
-text_utils.py
+'''
+ text_utils.py
 
 Common text processing utilities
+
+Part of the plotink plotting utilities for use with EiBotBoard
 https://github.com/evil-mad/plotink
 
-Intended to provide some common interfaces that can be used by
-AxiDraw, EggBot, WaterColorBot, and similar machines.
-"""
+Intended to provide some common interfaces that can be used by the
+Bantam Tools NextDraw, as well as the EggBot, WaterColorBot, AxiDraw, and
+similar machines that use the EiBotBoard.
+
+See __version__ below for version information
+
+The MIT License (MIT)
+
+Copyright (c) 2024 Windell H. Oskay, Bantam Tools
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+'''
 
 def version():    # Version number for this document
     """Return version number of this script"""
-    return "0.2" # Dated 2021-12-14
+    return "0.2.1" # Dated 2024-05-13
 
 __version__ = version()
 

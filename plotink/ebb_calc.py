@@ -1,14 +1,17 @@
-# coding=utf-8
-# ebb_calc.py
+'''
+ebb_calc.py
 
-"""
 Motion control calculations for EiBotBoard
+
+
+Part of the plotink plotting utilities for use with EiBotBoard
 https://github.com/evil-mad/plotink
 
-Intended to provide some common interfaces that can be used by
-EggBot, WaterColorBot, AxiDraw, and similar machines.
+Intended to provide some common interfaces that can be used by the
+Bantam Tools NextDraw, as well as the EggBot, WaterColorBot, AxiDraw, and
+similar machines that use the EiBotBoard.
 
-See version() below for version number.
+See __version__ below for version information
 
 The MIT License (MIT)
 
@@ -31,9 +34,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-"""
+'''
 
-__version__ = "1.0"  # Dated 2024-04-03
+__version__ = "1.0.1"  # Dated 2024-05-13
 
 import math
 import mpmath

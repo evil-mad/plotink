@@ -4,8 +4,9 @@ ebb3_serial.py
 Serial connection utilities for EiBotBoard, firmware v3 and newer
 https://github.com/evil-mad/plotink
 
-Intended to provide some common interfaces that can be used by
-Bantam Tools NextDraw, EggBot, WaterColorBot, AxiDraw, and similar machines.
+Intended to provide some common interfaces that can be used by the
+Bantam Tools NextDraw, as well as the EggBot, WaterColorBot, AxiDraw, and
+similar machines that use the EiBotBoard.
 
 See __version__ below for version information
 
