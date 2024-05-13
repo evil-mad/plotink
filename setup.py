@@ -16,7 +16,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='plotink',
-    version='1.10.0',
+    version='1.10.1',
     python_requires='>=3.6.0',
     long_description=long_description,
     long_description_content_type='text/markdown',

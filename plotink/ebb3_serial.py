@@ -33,7 +33,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__version__ = '0.1'  # Dated 2024-4-29
+__version__ = '0.2'  # Dated 2024-5-13
 
 from packaging.version import parse, InvalidVersion
 
@@ -303,6 +303,7 @@ class EBB3:
         else:
             cmd_name = cmd[0:2]     # All other cases: Command names are two letters long.
 
+        response = ''
         try:
             self.port.write((cmd + '\r').encode('ascii'))
             response = self.port.readline().decode('ascii').strip()
@@ -325,7 +326,6 @@ class EBB3:
             if cmd_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after command: {cmd}'
                 self.record_error(error_msg)
-
         if 'Err:' in response:
             error_msg = 'Error reported by EBB.\n' +\
                f'    Command: {cmd}\n    Response: {response}'
