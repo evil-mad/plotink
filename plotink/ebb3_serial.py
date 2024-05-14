@@ -425,9 +425,10 @@ class EBB3:
                f'    Query: QG\n    Response: {response}'
             self.record_error(error_msg)
             return None
-
-        return int(response[3:], 16) # Strip off query name ("QG,") and convert to int.
-
+        try:
+            return int(response[3:], 16) # Strip off query name ("QG,") and convert to int.
+        except (TypeError, ValueError):
+            return None
 
     def var_write(self, value, index):
         """
