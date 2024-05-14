@@ -1,6 +1,8 @@
 # plotink
 Python helper routines for driving AxiDraw, EggBot, WaterColorBot, and similar plotter-based machines.
 
+This repository maintained by Windell H. Oskay, Bantam Tools.
+
 Source code and issue tracker are hosted [at github](https://github.com/evil-mad/plotink).
 
 

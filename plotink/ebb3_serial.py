@@ -4,8 +4,9 @@ ebb3_serial.py
 Serial connection utilities for EiBotBoard, firmware v3 and newer
 https://github.com/evil-mad/plotink
 
-Intended to provide some common interfaces that can be used by
-Bantam Tools NextDraw, EggBot, WaterColorBot, AxiDraw, and similar machines.
+Intended to provide some common interfaces that can be used by the
+Bantam Tools NextDraw, as well as the EggBot, WaterColorBot, AxiDraw, and
+similar machines that use the EiBotBoard.
 
 See __version__ below for version information
 
@@ -33,7 +34,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__version__ = '0.1'  # Dated 2024-4-29
+__version__ = '0.2'  # Dated 2024-5-13
 
 from packaging.version import parse, InvalidVersion
 
@@ -303,6 +304,7 @@ class EBB3:
         else:
             cmd_name = cmd[0:2]     # All other cases: Command names are two letters long.
 
+        response = ''
         try:
             self.port.write((cmd + '\r').encode('ascii'))
             response = self.port.readline().decode('ascii').strip()
@@ -325,7 +327,6 @@ class EBB3:
             if cmd_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after command: {cmd}'
                 self.record_error(error_msg)
-
         if 'Err:' in response:
             error_msg = 'Error reported by EBB.\n' +\
                f'    Command: {cmd}\n    Response: {response}'
@@ -357,9 +358,6 @@ class EBB3:
             qry_name = qry[0]       # Case of single-letter command with arguments.
         else:
             qry_name = qry[0:2]     # Cases except QU: Query responses are two letters long.
-
-        # For the special case of QU,where the query argument is included in response,
-        #   use the default qry_name, with the full query.
 
         response = ''
         try:
