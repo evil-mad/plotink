@@ -34,7 +34,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__version__ = '0.2'  # Dated 2024-5-13
+__version__ = '0.2.1'  # Dated 2024-5-28
 
 from packaging.version import parse, InvalidVersion
 
@@ -170,8 +170,8 @@ class EBB3:
             return False
 
         nickname = nickname.strip()
-        if not bool(nickname): # Return on empty or None nickname.
-            return False
+        if not bool(nickname):
+            nickname = "" # Clear nickname in this case
 
         try:
             self.command('ST,' + nickname)
