@@ -13,7 +13,7 @@ See __version__ below for version information
 
 The MIT License (MIT)
 
-Copyright (c) 2024 Windell H. Oskay, Bantam Tools
+Copyright (c) 2025 Windell H. Oskay, Bantam Tools
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__version__ = '0.1'  # Dated 2024-3-18
+__version__ = '0.2'  # Dated 2025-02-02
 
 from . import ebb3_serial
 
@@ -90,7 +90,7 @@ class EBBMotionWrap(ebb3_serial.EBB3):
         if (self.port is None) or (self.err is not None):
             return
 
-        if position1 and position2:
+        if (position1 is not None) and (position2 is not None):
             str_output = f'HM,{rate},{position1},{position2}'
         else:
             str_output = f'HM,{rate}'
