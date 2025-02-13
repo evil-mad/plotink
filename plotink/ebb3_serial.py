@@ -308,15 +308,9 @@ class EBB3:
         response = ''
         try:
             self.port.write((cmd + '\r').encode('ascii'))
-            response = self._readline_with_polls()
-            if not response.startswith(cmd_name):
-                if response:
-                    error_msg = '\nUnexpected response from EBB.' +\
-                       f'    Command: {cmd}\n    Response: {response}'
-                else:
-                    error_msg = f'EBB Serial Timeout after command: {cmd}'
-                self.record_error(error_msg)
-
+            response = self._get_and_eval_response('command', cmd, cmd_name)
+            if response is None:
+                return False
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if cmd_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after command: {cmd}'
@@ -353,14 +347,8 @@ class EBB3:
         response = ''
         try:
             self.port.write((qry + '\r').encode('ascii'))
-            response = self._readline_with_polls()
-            if not response.startswith(qry_name):
-                if response:
-                    error_msg = '\nUnexpected response from EBB.' +\
-                       f'    Query: {qry}\n    Response: {response}'
-                else:
-                    error_msg = f'EBB Serial Timeout after query: {qry}'
-                self.record_error(error_msg)
+            response = self._get_and_eval_response('query', qry, qry_name)
+            if response is None:
                 return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
@@ -391,15 +379,9 @@ class EBB3:
         response = ''
         try:
             self.port.write('QG\r'.encode('ascii'))
-            response = self._readline_with_polls()
-            if not response.startswith('QG'):
-                if response:
-                    error_msg = '\nUnexpected response from EBB.' +\
-                       f'    Response to QG query: {response}'
-                else:
-                    error_msg = 'EBB Serial Timeout while reading status byte.'
-                self.record_error(error_msg)
-
+            response = self._get_and_eval_response('query', 'QG', 'QG')
+            if response is None:
+                return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
             error_msg = 'USB communication error after status byte query'
             self.record_error(error_msg)
@@ -413,13 +395,27 @@ class EBB3:
         except (TypeError, ValueError):
             return None
 
-    def _readline_with_polls(self):
+    def _get_and_eval_response(self, type, request, request_name):
+        '''
+        `request` is the previous command or query ent to the Ebb
+        `type` is 'command' or 'query'
+        return None if there's an error
+        '''
         response = ""
         n_poll_count = 0
         while len(response) == 0 and n_poll_count < self.readline_poll_max:
             # get new response to replace null response if necessary
             response = self.port.readline().decode('ascii').strip()
             n_poll_count += 1
+
+        if not response.startswith(request_name):
+            if response:
+                error_msg = '\nUnexpected response from EBB.' +\
+                   f'    Command: {request}\n    Response: {response}'
+            else:
+                error_msg = f'EBB Serial Timeout after {type}: {request}'
+            self.record_error(error_msg)
+            return None
         return response
 
     def _check_and_record_ebb_error(self, response, type, request):
