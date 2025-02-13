@@ -308,14 +308,7 @@ class EBB3:
         response = ''
         try:
             self.port.write((cmd + '\r').encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
-
-            n_poll_count = 0
-            while len(response) == 0 and n_poll_count < self.readline_poll_max:
-                # get new response to replace null response if necessary
-                response = self.port.readline().decode('ascii').strip()
-                n_poll_count += 1
-
+            response = self._readline_with_polls()
             if not response.startswith(cmd_name):
                 if response:
                     error_msg = '\nUnexpected response from EBB.' +\
@@ -334,7 +327,6 @@ class EBB3:
             self.record_error(error_msg)
 
         return bool(self.err is None) # Return True if no error, False if error.
-
 
     def query(self, qry):
         '''
@@ -363,14 +355,7 @@ class EBB3:
         response = ''
         try:
             self.port.write((qry + '\r').encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
-
-            n_poll_count = 0
-            while len(response) == 0 and n_poll_count < self.readline_poll_max:
-                # get new response to replace null response if necessary
-                response = self.port.readline().decode('ascii').strip()
-                n_poll_count += 1
-
+            response = self._readline_with_polls()
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after query: {qry}'
@@ -406,13 +391,7 @@ class EBB3:
         response = ''
         try:
             self.port.write('QG\r'.encode('ascii'))
-
-            n_poll_count = 0
-            while len(response) == 0 and n_poll_count < self.readline_poll_max:
-                # get new response to replace null response if necessary
-                response = self.port.readline().decode('ascii').strip()
-                n_poll_count += 1
-
+            response = self._readline_with_polls()
             if not response.startswith('QG'):
                 if response:
                     error_msg = '\nUnexpected response from EBB.' +\
@@ -435,6 +414,15 @@ class EBB3:
             return int(response[3:], 16) # Strip off query name ("QG,") and convert to int.
         except (TypeError, ValueError):
             return None
+
+    def _readline_with_polls(self):
+        response = ""
+        n_poll_count = 0
+        while len(response) == 0 and n_poll_count < self.readline_poll_max:
+            # get new response to replace null response if necessary
+            response = self.port.readline().decode('ascii').strip()
+            n_poll_count += 1
+        return response
 
     def var_write(self, value, index):
         """
