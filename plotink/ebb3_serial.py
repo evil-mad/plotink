@@ -48,6 +48,7 @@ class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
     MIN_VERSION_STRING = "3.0.2"    # Minimum supported EBB firmware version.
+    readline_retry_max = 25
 
     def __init__(self):
         self.port_name = None       # Port name (enumeration), if any
@@ -310,7 +311,7 @@ class EBB3:
             response = self.port.readline().decode('ascii').strip()
 
             n_retry_count = 0
-            while len(response) == 0 and n_retry_count < 25:
+            while len(response) == 0 and n_retry_count < self.readline_retry_max:
                 # get new response to replace null response if necessary
                 response = self.port.readline().decode('ascii').strip()
                 n_retry_count += 1
@@ -365,7 +366,7 @@ class EBB3:
             response = self.port.readline().decode('ascii').strip()
 
             n_retry_count = 0
-            while len(response) == 0 and n_retry_count < 25:
+            while len(response) == 0 and n_retry_count < self.readline_retry_max:
                 # get new response to replace null response if necessary
                 response = self.port.readline().decode('ascii').strip()
                 n_retry_count += 1
@@ -405,7 +406,12 @@ class EBB3:
         response = ''
         try:
             self.port.write('QG\r'.encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
+
+            n_retry_count = 0
+            while len(response) == 0 and n_retry_count < self.readline_retry_max:
+                # get new response to replace null response if necessary
+                response = self.port.readline().decode('ascii').strip()
+                n_retry_count += 1
 
             if not response.startswith('QG'):
                 if response:
