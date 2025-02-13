@@ -305,10 +305,8 @@ class EBB3:
         else:
             cmd_name = cmd[0:2]     # All other cases: Command names are two letters long.
 
-        response = ''
         try:
-            self.port.write((cmd + '\r').encode('ascii'))
-            response = self._get_and_eval_response('command', cmd, cmd_name)
+            response = self._send_request('command', cmd, cmd_name)
             if response is None:
                 return False
         except (serial.SerialException, IOError, RuntimeError, OSError):
@@ -344,10 +342,8 @@ class EBB3:
         else:
             qry_name = qry[0:2]     # Cases except QU: Query responses are two letters long.
 
-        response = ''
         try:
-            self.port.write((qry + '\r').encode('ascii'))
-            response = self._get_and_eval_response('query', qry, qry_name)
+            response = self._send_request('query', qry, qry_name)
             if response is None:
                 return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
@@ -376,10 +372,8 @@ class EBB3:
         if (self.port is None) or (self.err is not None):
             return None
 
-        response = ''
         try:
-            self.port.write('QG\r'.encode('ascii'))
-            response = self._get_and_eval_response('query', 'QG', 'QG')
+            response = self._send_request('query', 'QG', 'QG')
             if response is None:
                 return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
@@ -395,12 +389,18 @@ class EBB3:
         except (TypeError, ValueError):
             return None
 
-    def _get_and_eval_response(self, type, request, request_name):
+    def _send_request(self, type, request, request_name, num_tries = 2):
         '''
-        `request` is the previous command or query ent to the Ebb
         `type` is 'command' or 'query'
+        `request` is the command or query to send to the EBB
+        `request_name` is the short name of `request`
+        `num_tries` is the number of times to try if something went wrong. "1" means no retries.
         return None if there's an error
         '''
+        # send the request
+        self.port.write((request + '\r').encode('ascii'))
+
+        # and wait for a response
         response = ""
         n_retry_count = 0
         while len(response) == 0 and n_retry_count < self.readline_retry_max:
@@ -408,14 +408,19 @@ class EBB3:
             response = self.port.readline().decode('ascii').strip()
             n_retry_count += 1
 
+        # evaluate that response
+        # if the response is unexpected or empty, recursively try again according to `num_tries`
         if not response.startswith(request_name):
-            if response:
-                error_msg = '\nUnexpected response from EBB.' +\
-                   f'    Command: {request}\n    Response: {response}'
-            else:
-                error_msg = f'EBB Serial Timeout after {type}: {request}'
-            self.record_error(error_msg)
-            return None
+            if num_tries > 1:
+                self._send_request(type, request, request_name, num_tries - 1)
+            else: # base case; num_tries == 1 (or less but that would be silly)
+                if response:
+                    error_msg = '\nUnexpected response from EBB.' +\
+                       f'    Command: {request}\n    Response: {response}'
+                else:
+                    error_msg = f'EBB Serial Timeout after {type}: {request}'
+                self.record_error(error_msg)
+                return None
         return response
 
     def _check_and_record_ebb_error(self, response, type, request):
