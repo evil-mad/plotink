@@ -48,6 +48,7 @@ class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
     MIN_VERSION_STRING = "3.0.2"    # Minimum supported EBB firmware version.
+    readline_poll_max = 25
 
     def __init__(self):
         self.port_name = None       # Port name (enumeration), if any
@@ -309,11 +310,11 @@ class EBB3:
             self.port.write((cmd + '\r').encode('ascii'))
             response = self.port.readline().decode('ascii').strip()
 
-            n_retry_count = 0
-            while len(response) == 0 and n_retry_count < 25:
+            n_poll_count = 0
+            while len(response) == 0 and n_poll_count < self.readline_poll_max:
                 # get new response to replace null response if necessary
                 response = self.port.readline().decode('ascii').strip()
-                n_retry_count += 1
+                n_poll_count += 1
 
             if not response.startswith(cmd_name):
                 if response:
@@ -364,11 +365,11 @@ class EBB3:
             self.port.write((qry + '\r').encode('ascii'))
             response = self.port.readline().decode('ascii').strip()
 
-            n_retry_count = 0
-            while len(response) == 0 and n_retry_count < 25:
+            n_poll_count = 0
+            while len(response) == 0 and n_poll_count < self.readline_poll_max:
                 # get new response to replace null response if necessary
                 response = self.port.readline().decode('ascii').strip()
-                n_retry_count += 1
+                n_poll_count += 1
 
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
@@ -405,7 +406,12 @@ class EBB3:
         response = ''
         try:
             self.port.write('QG\r'.encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
+
+            n_poll_count = 0
+            while len(response) == 0 and n_poll_count < self.readline_poll_max:
+                # get new response to replace null response if necessary
+                response = self.port.readline().decode('ascii').strip()
+                n_poll_count += 1
 
             if not response.startswith('QG'):
                 if response:
