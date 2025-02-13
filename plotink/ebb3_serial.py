@@ -356,18 +356,24 @@ class EBB3:
         try:
             self.port.write((qry + '\r').encode('ascii'))
             response = self._readline_with_retries()
+            if not response.startswith(qry_name):
+                if response:
+                    error_msg = '\nUnexpected response from EBB.' +\
+                       f'    Query: {qry}\n    Response: {response}'
+                else:
+                    error_msg = f'EBB Serial Timeout after query: {qry}'
+                self.record_error(error_msg)
+                return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after query: {qry}'
                 self.record_error(error_msg)
                 return None
 
-        if ('Err:' in response) or (not response.startswith(qry_name)):
-            if response:
-                error_msg = '\nUnexpected response from EBB.' +\
-                   f'    Query: {qry}\n    Response: {response}'
-            else:
-                error_msg = f'EBB Serial Timeout after query: {qry}'
+
+        if 'Err:' in response:
+            error_msg = 'Error reported by EBB.\n' +\
+               f'    Query: {qry}\n    Response: {response}'
             self.record_error(error_msg)
             return None
 
