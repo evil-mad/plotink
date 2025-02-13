@@ -321,10 +321,8 @@ class EBB3:
             if cmd_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after command: {cmd}'
                 self.record_error(error_msg)
-        if 'Err:' in response:
-            error_msg = 'Error reported by EBB.\n' +\
-               f'    Command: {cmd}\n    Response: {response}'
-            self.record_error(error_msg)
+
+        self._check_and_record_ebb_error(response, 'Command', cmd)
 
         return bool(self.err is None) # Return True if no error, False if error.
 
@@ -370,11 +368,7 @@ class EBB3:
                 self.record_error(error_msg)
                 return None
 
-
-        if 'Err:' in response:
-            error_msg = 'Error reported by EBB.\n' +\
-               f'    Query: {qry}\n    Response: {response}'
-            self.record_error(error_msg)
+        if self._check_and_record_ebb_error(response, 'Query', qry):
             return None
 
         header_len = len(qry_name)
@@ -411,11 +405,9 @@ class EBB3:
             self.record_error(error_msg)
             return None
 
-        if 'Err:' in response:
-            error_msg = 'Error reported by EBB.\n' +\
-               f'    Query: QG\n    Response: {response}'
-            self.record_error(error_msg)
+        if self._check_and_record_ebb_error(response, 'Query', 'QG'):
             return None
+
         try:
             return int(response[3:], 16) # Strip off query name ("QG,") and convert to int.
         except (TypeError, ValueError):
@@ -429,6 +421,21 @@ class EBB3:
             response = self.port.readline().decode('ascii').strip()
             n_retry_count += 1
         return response
+
+    def _check_and_record_ebb_error(self, response, type, request):
+        '''
+        `response` is the response from the EBB, encoded etc.
+        `type` is "command" or "query"
+        `request` is the previous command or query sent to the EBB
+        returns True if the ebb reported an error, else False
+        '''
+        if 'Err:' in response:
+            formatted_type = type.capitalize()
+            error_msg = 'Error reported by EBB.\n' +\
+               f'    {formatted_type}: {request}\n    Response: {response}'
+            self.record_error(error_msg)
+            return True
+        return False
 
     def var_write(self, value, index):
         """
