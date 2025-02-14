@@ -44,6 +44,8 @@ from serial.tools.list_ports import comports \
     #pylint: disable=wrong-import-position, wrong-import-order
 
 
+import logging
+
 class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
@@ -414,6 +416,7 @@ class EBB3:
         # if the response is unexpected or empty, recursively try again according to `num_tries`
         if not response.startswith(request_name):
             if num_tries > 1:
+                logging.error(f'retrying {type}: {request}')
                 self.retry_count += 1
                 self._send_request(type, request, request_name, num_tries - 1)
             else: # base case; num_tries == 1 (or less but that would be silly)
