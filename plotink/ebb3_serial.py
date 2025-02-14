@@ -58,7 +58,9 @@ class EBB3:
         self.name = None            # EBB "nickname," if known
         self.err = None             # None, or a string giving first fatal error message.
         self.caller = None          # None, or a string indicating which program opened the port
-
+        self.retry_count = 0        # A counter keeping track of how many times a command or
+                                    # query had to be retried due to timing out or an unexpected
+                                    # response from the EBB
 
     def find_first(self):
         '''
@@ -412,6 +414,7 @@ class EBB3:
         # if the response is unexpected or empty, recursively try again according to `num_tries`
         if not response.startswith(request_name):
             if num_tries > 1:
+                self.retry_count += 1
                 self._send_request(type, request, request_name, num_tries - 1)
             else: # base case; num_tries == 1 (or less but that would be silly)
                 if response:
