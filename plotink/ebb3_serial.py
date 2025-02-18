@@ -50,7 +50,7 @@ class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
     MIN_VERSION_STRING = "3.0.2"    # Minimum supported EBB firmware version.
-    readline_retry_max = 25
+    readline_retry_max = 40
 
     def __init__(self):
         self.port_name = None       # Port name (enumeration), if any
@@ -123,6 +123,7 @@ class EBB3:
         ''' Record error, if it is the first error '''
         if self.err is None:
             self.err = message
+            logging.error(message)
 
 
     def _get_port_name(self, given_name=None):
@@ -315,7 +316,7 @@ class EBB3:
                 return False
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if cmd_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
-                error_msg = f'USB communication error after command: {cmd}'
+                error_msg = f'USB communication error after command: {cmd}' + sys.exc_info()[1] + sys.exc_info()[2]
                 self.record_error(error_msg)
 
         self._check_and_record_ebb_error(response, 'Command', cmd)
@@ -352,7 +353,7 @@ class EBB3:
                 return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
-                error_msg = f'USB communication error after query: {qry}'
+                error_msg = f'USB communication error after query: {qry}' + sys.exc_info()[1] + sys.exc_info()[2]
                 self.record_error(error_msg)
                 return None
 
@@ -380,8 +381,8 @@ class EBB3:
             response = self._send_request('query', 'QG', 'QG')
             if response is None:
                 return None
-        except (serial.SerialException, IOError, RuntimeError, OSError):
-            error_msg = 'USB communication error after status byte query'
+        except (serial.SerialException, IOError, RuntimeError, OSError) as err:
+            error_msg = 'USB communication error after status byte query:' + sys.exc_info()[1] + sys.exc_info()[2]
             self.record_error(error_msg)
             return None
 
@@ -412,13 +413,19 @@ class EBB3:
             response = self.port.readline().decode('ascii').strip()
             n_retry_count += 1
 
+        # Special case: Try again _once_ if command has syntax error.
+        if '!8 Err' in response:
+            logging.error(f'received unexpected response, trying one more readline. from {type}: {request}. (response: {response})')
+            response = self.port.readline().decode('ascii').strip()
+            logging.error(f'now the response is: {response}')
+
         # evaluate that response
         # if the response is unexpected or empty, recursively try again according to `num_tries`
         if not response.startswith(request_name):
             if num_tries > 1:
-                logging.error(f'retrying {type}: {request}')
+                logging.error(f'retrying {type}: {request} (response was "{response}"')
                 self.retry_count += 1
-                self._send_request(type, request, request_name, num_tries - 1)
+                response = self._send_request(type, request, request_name, num_tries - 1)
             else: # base case; num_tries == 1 (or less but that would be silly)
                 if response:
                     error_msg = '\nUnexpected response from EBB.' +\
