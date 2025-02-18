@@ -410,11 +410,15 @@ class EBB3:
         n_retry_count = 0
         while (len(response) == 0 or response[-1] != "\n") and n_retry_count < self.readline_retry_max:
             # get new response to replace null response if necessary
-            response = response + self.port.readline().decode('ascii').strip()
+            response = response + self.port.readline().decode('ascii')
             n_retry_count += 1
 
         if response[-1] != "\n":
            logging.error(f'readline did not return full line. according to pyserial docs, since the last character of the response is not a newline, there was a timeout and we received a partial response. The response is \"{response}\"')
+        else:
+            logging.error(f'readline returned full line: {response}')
+
+        response = response.strip()
 
         # Special case: Try again _once_ if command has syntax error.
         if '!8 Err' in response:
