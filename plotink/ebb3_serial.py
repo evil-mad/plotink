@@ -413,6 +413,9 @@ class EBB3:
             response = self.port.readline().decode('ascii').strip()
             n_retry_count += 1
 
+        if response[-1] != "\n":
+           logging.error(f'readline did not return full line. according to pyserial docs, since the last character of the response is not a newline, there was a timeout and we received a partial response. The response is \"{response}\"')
+
         # Special case: Try again _once_ if command has syntax error.
         if '!8 Err' in response:
             logging.error(f'received unexpected response, trying one more readline. from {type}: {request}. (response: {response})')
@@ -423,9 +426,10 @@ class EBB3:
         # if the response is unexpected or empty, recursively try again according to `num_tries`
         if not response.startswith(request_name):
             if num_tries > 1:
-                logging.error(f'retrying {type}: {request} (response was "{response}"')
                 self.retry_count += 1
+                logging.error(f'{self.retry_count} retrying {type}: {request} (response was "{response}")')
                 response = self._send_request(type, request, request_name, num_tries - 1)
+                logging.error(f'response to retry {self.retry_count} was "{response}"')
             else: # base case; num_tries == 1 (or less but that would be silly)
                 if response:
                     error_msg = '\nUnexpected response from EBB.' +\
