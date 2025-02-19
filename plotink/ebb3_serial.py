@@ -402,47 +402,64 @@ class EBB3:
         `num_tries` is the number of times to try if something went wrong. "1" means no retries.
         return None if there's an error
         '''
+        def response_incomplete(the_response):
+            return len(the_response) == 0 or the_response[-1] != "\n"
+
         # send the request
         self.port.write((request + '\r').encode('ascii'))
 
         # and wait for a response
         response = ""
         n_retry_count = 0
-        while (len(response) == 0 or response[-1] != "\n") and n_retry_count < self.readline_retry_max:
+
+        # poll port until we get any kind of response or timeout
+        while len(response) == 0 and n_retry_count < self.readline_retry_max:
             # get new response to replace null response if necessary
-            response = response + self.port.readline().decode('ascii')
+            response = self.port.readline().decode('ascii')
             n_retry_count += 1
 
-        if response[-1] != "\n":
-           logging.error(f'readline did not return full line. according to pyserial docs, since the last character of the response is not a newline, there was a timeout and we received a partial response. The response is \"{response}\"')
-        else:
-            logging.error(f'readline returned full line: {response}')
+        if len(response) != 0 and response_incomplete(response): # received a partial response; poll a little longer waiting for the last character to be '\n'
+            n_retry_count = 0
+            while response_incomplete(response) and n_retry_count < self.readline_retry_max:
+                response = response + self.port.readline.decode('ascii')
+                n_retry_count += 1
+
+        if self.port.in_waiting > 0:
+            logging.error('IN_WAITING > 0')
+
+         # four possibilities now
+         # len(response) == 0, aka a classic timeout
+         # len(response) != 0 and response[-1] != "\n", aka a timeout but received some information
+         # len(response) != 0 and response[-1] == "\n", aka no timeout
+         #        response.startswith(request_name) # yay
+         #        not response.startswith(request_name) # boo
+
+        # evaluate the response
+        if not response_incomplete(response) and response.startswith(request_name):
+            # the response is complete, and it is as expected
+            return response.strip()
+
+        # otherwise, recursively try again according to `num_tries`
+        error_type = ""
+        if len(response) != 0:
+            error_type = "Timeout with no response"
+        elif response_incomplete(response):
+            error_type = "Timeout with partial response"
+        else: # aka not response.startswith(request_name)
+            error_type = "Unexpected response"
 
         response = response.strip()
-
-        # Special case: Try again _once_ if command has syntax error.
-        if '!8 Err' in response:
-            logging.error(f'received unexpected response, trying one more readline. from {type}: {request}. (response: {response})')
-            response = self.port.readline().decode('ascii').strip()
-            logging.error(f'now the response is: {response}')
-
-        # evaluate that response
-        # if the response is unexpected or empty, recursively try again according to `num_tries`
-        if not response.startswith(request_name):
-            if num_tries > 1:
-                self.retry_count += 1
-                logging.error(f'{self.retry_count} retrying {type}: {request} (response was "{response}")')
-                response = self._send_request(type, request, request_name, num_tries - 1)
-                logging.error(f'response to retry {self.retry_count} was "{response}"')
-            else: # base case; num_tries == 1 (or less but that would be silly)
-                if response:
-                    error_msg = '\nUnexpected response from EBB.' +\
-                       f'    Command: {request}\n    Response: {response}'
-                else:
-                    error_msg = f'EBB Serial Timeout after {type}: {request}'
-                self.record_error(error_msg)
-                return None
-        return response
+        if num_tries > 1: # recursive case
+            self.retry_count += 1
+            logging.error(f'USB ERROR {error_type}: {self.retry_count} retrying {type}: {request} (response was "{response}")')
+            self.port.reset_input_buffer() # Flush input buffer, discarding all its contents. Especially important if port timed out with a partial response
+            response = self._send_request(type, request, request_name, num_tries - 1)
+            logging.error(f'response to retry {self.retry_count} was "{response}"')
+            return response
+        else: # base case
+            self.record_error('\nEBB Serial Error.' +\
+                f'    Command: {request}\n    {error_type}: {response}')
+            return None
 
     def _check_and_record_ebb_error(self, response, type, request):
         '''
