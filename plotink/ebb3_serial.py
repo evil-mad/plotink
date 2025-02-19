@@ -395,23 +395,57 @@ class EBB3:
             return None
 
     def _send_request(self, type, request, request_name, num_tries = 2):
-        '''
+      '''
         `type` is 'command' or 'query'
         `request` is the command or query to send to the EBB
         `request_name` is the short name of `request`
         `num_tries` is the number of times to try if something went wrong. "1" means no retries.
         return None if there's an error
-        '''
-        def response_incomplete(the_response):
+      '''
+      def response_incomplete(the_response):
             return len(the_response) == 0 or the_response[-1] != "\n"
 
+      try:
         # send the request
         self.port.write((request + '\r').encode('ascii'))
 
-        # and wait for a response
-        response = ""
-        n_retry_count = 0
+        if self.port.out_waiting > 0:
+            # I expect this never to happen based on the pyserial docs. No write timeout is set, so write is blocking.
+            logging.error(f'OUT_WAITING == {self.port.out_waiting}')
 
+        # and wait for a response
+        responses = []
+        n_retry_count = 0
+        # poll for response until we run out of retries or self.port indicates there is no more input # TODO adjust/tune retries and timeout params
+        while self.port.in_waiting > 0 and n_retry_count < self.readline_retry_max:
+            responses += self.port.readlines()
+            n_retry_count += 1
+
+        # evaluate the responses
+        response = ''
+        if len(responses) == 0:
+            raise RuntimeError('Timed out with no response after {n_retry_count} tries.')
+
+        response = responses[-1].decode('ascii').strip() # we only care about the last response; previous responses are probably related to prior writes and irrelevant here
+
+        if not response.startswith(request_name):
+            raise RuntimeError('Received unexpected response after {n_retry_count} tries.')
+        return response
+      except RuntimeError as re:
+        logging.error(f'USB ERROR: {re}.\n' +
+                f'    Command: {request}\n    Response: {response}')
+        if num_tries > 1: # recursive case
+            self.retry_count += 1
+            logging.error(f'    RETRY {self.retry_count}')
+            response = self._send_request(type, request, request_name, num_tries - 1)
+            logging.error(f'    RESPONSE TO RETRY {self.retry_count}: {response}')
+            return response
+        else: # base case
+            logging.error(f'    NOT RETRYING')
+            return None
+
+
+        '''
         # poll port until we get any kind of response or timeout
         while len(response) == 0 and n_retry_count < self.readline_retry_max:
             # get new response to replace null response if necessary
@@ -426,14 +460,14 @@ class EBB3:
 
         if self.port.in_waiting > 0:
             logging.error('IN_WAITING > 0')
-
+         '''
          # four possibilities now
          # len(response) == 0, aka a classic timeout
          # len(response) != 0 and response[-1] != "\n", aka a timeout but received some information
          # len(response) != 0 and response[-1] == "\n", aka no timeout
          #        response.startswith(request_name) # yay
          #        not response.startswith(request_name) # boo
-
+        '''
         # evaluate the response
         if not response_incomplete(response) and response.startswith(request_name):
             # the response is complete, and it is as expected
@@ -441,7 +475,7 @@ class EBB3:
 
         # otherwise, recursively try again according to `num_tries`
         error_type = ""
-        if len(response) != 0:
+        if len(response) == 0:
             error_type = "Timeout with no response"
         elif response_incomplete(response):
             error_type = "Timeout with partial response"
@@ -460,7 +494,7 @@ class EBB3:
             self.record_error('\nEBB Serial Error.' +\
                 f'    Command: {request}\n    {error_type}: {response}')
             return None
-
+        '''
     def _check_and_record_ebb_error(self, response, type, request):
         '''
         `response` is the response from the EBB, encoded etc.
