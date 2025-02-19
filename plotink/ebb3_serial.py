@@ -416,8 +416,8 @@ class EBB3:
         # and wait for a response
         responses = []
         n_retry_count = 0
-        # poll for response until we run out of retries or self.port indicates there is no more input # TODO adjust/tune retries and timeout params
-        while self.port.in_waiting > 0 and n_retry_count < self.readline_retry_max:
+        # poll for response until we get any response and self.port indicates there is no more input, a maximum of self.readline_retry_max times  # TODO adjust/tune retries and timeout params
+        while (len(responses) == 0 or self.port.in_waiting > 0) and n_retry_count < self.readline_retry_max:
             responses += self.port.readlines()
             n_retry_count += 1
 
@@ -426,6 +426,7 @@ class EBB3:
         if len(responses) == 0:
             raise RuntimeError(f'Timed out with no response after {n_retry_count} tries.')
 
+        logging.error(f'{responses}')
         response = responses[-1].decode('ascii').strip() # we only care about the last response; previous responses are probably related to prior writes and irrelevant here
 
         if not response.startswith(request_name):
