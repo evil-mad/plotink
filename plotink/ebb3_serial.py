@@ -400,7 +400,7 @@ class EBB3:
         `request` is the command or query to send to the EBB
         `request_name` is the short name of `request`
         `num_tries` is the number of times to try if something went wrong. "1" means no retries.
-        return None if there's an error
+        return None if there's an error, otherwise return the response bytestring
       '''
       def response_incomplete(the_response):
             return len(the_response) == 0 or the_response[-1] != "\n"
@@ -424,12 +424,12 @@ class EBB3:
         # evaluate the responses
         response = ''
         if len(responses) == 0:
-            raise RuntimeError('Timed out with no response after {n_retry_count} tries.')
+            raise RuntimeError(f'Timed out with no response after {n_retry_count} tries.')
 
         response = responses[-1].decode('ascii').strip() # we only care about the last response; previous responses are probably related to prior writes and irrelevant here
 
         if not response.startswith(request_name):
-            raise RuntimeError('Received unexpected response after {n_retry_count} tries.')
+            raise RuntimeError(f'Received unexpected response after {n_retry_count} tries.')
         return response
       except RuntimeError as re:
         logging.error(f'USB ERROR: {re}.\n' +
@@ -442,6 +442,8 @@ class EBB3:
             return response
         else: # base case
             logging.error(f'    NOT RETRYING')
+            self.record_error('\nEBB Serial Error.' +\
+                f'    Command: {request}\n    Response: {response}')
             return None
 
 
