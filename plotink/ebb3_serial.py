@@ -48,7 +48,6 @@ class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
     MIN_VERSION_STRING = "3.0.2"    # Minimum supported EBB firmware version.
-    readline_poll_max = 25
 
     def __init__(self):
         self.port_name = None       # Port name (enumeration), if any
@@ -397,32 +396,53 @@ class EBB3:
         `request` is the command or query to send to the EBB
         `request_name` is the short name of `request`
         `num_tries` is the number of times to try if something went wrong. "1" means no retries.
-        return None if there's an error
-        '''
-        def response_incomplete(the_response):
-            return len(the_response) == 0 or the_response[-1] != "\n"
+        return None if there's an error, otherwise return the response bytestring
+      '''
+      try:
+        readline_poll_max = 25
 
         # send the request
         self.port.write((request + '\r').encode('ascii'))
 
         # and wait for a response
-        response = ""
+        responses = []
         n_poll_count = 0
-
-        # poll port until we get any kind of response or timeout
-        while len(response) == 0 and n_poll_count < self.readline_poll_max:
-            # get new response to replace null response if necessary
-            response = self.port.readline().decode('ascii').strip()
+        # poll for response until we get any response and self.port indicates there is no more input, a maximum of readline_poll_max times  
+        while (len(responses) == 0 or self.port.in_waiting > 0) and n_poll_count < readline_poll_max:
+            in_bytes = self.port.readline()
             n_poll_count += 1
+            if len(in_bytes.decode('ascii').strip()) == 0: # received nothing, keep polling
+                continue
 
-        if len(response) != 0 and response_incomplete(response): # received a partial response; poll a little longer waiting for the last character to be '\n'
-            n_poll_count = 0
-            while response_incomplete(response) and n_poll_count < self.readline_poll_max:
-                response = response + self.port.readline.decode('ascii')
-                n_poll_count += 1
+            # store in_bytes either as a new line (if no previous line or previous line is complete) or as an addition to the previous line
+            if len(responses) == 0:
+                responses.append(in_bytes)
+            elif responses[-1][-1] == "\n":  # previous line (responses[-1]) is complete, indicated by its last character (response[-1][-1]) being a newline
+                responses.append(in_bytes)
+            else: # previous line is incomplete; don't create a new entry in responses
+                responses[-1] += in_bytes
 
-        if self.port.in_waiting > 0:
-            logging.error('IN_WAITING > 0')
+        # evaluate the responses
+        response = ''
+        while len(response) == 0 and len(responses) != 0:
+            response = responses.pop().decode('ascii').strip() # we only care about the last response; previous responses are probably related to prior writes and irrelevant here
+
+        if len(response) == 0:
+            raise RuntimeError(f'Timed out with no response (or empty responses) after {n_poll_count} polls.')
+
+        if not response.startswith(request_name):
+            raise RuntimeError(f'Received unexpected response after {n_poll_count} polls.')
+        return response
+      except RuntimeError as re:
+        if num_tries > 1: # recursive case
+            self.retry_count += 1
+            self.port.reset_input_buffer() # clear out any inputs from EBB prior to the new request
+            response = self._send_request(type, request, request_name, num_tries - 1)
+            return response
+        else: # base case
+            self.record_error('\nEBB Serial Error.' +\
+                f'    Command: {request}\n    Response: {response}')
+            return None
 
          # four possibilities now
          # len(response) == 0, aka a classic timeout
@@ -430,33 +450,6 @@ class EBB3:
          # len(response) != 0 and response[-1] == "\n", aka no timeout
          #        response.startswith(request_name) # yay
          #        not response.startswith(request_name) # boo
-
-        # evaluate the response
-        if not response_incomplete(response) and response.startswith(request_name):
-            # the response is complete, and it is as expected
-            return response.strip()
-
-        # otherwise, recursively try again according to `num_tries`
-        error_type = ""
-        if len(response) != 0:
-            error_type = "Timeout with no response"
-        elif response_incomplete(response):
-            error_type = "Timeout with partial response"
-        else: # aka not response.startswith(request_name)
-            error_type = "Unexpected response"
-
-        response = response.strip()
-        if num_tries > 1: # recursive case
-            self.retry_count += 1
-            logging.error(f'USB ERROR {error_type}: {self.retry_count} retrying {type}: {request} (response was "{response}")')
-            self.port.reset_input_buffer() # Flush input buffer, discarding all its contents. Especially important if port timed out with a partial response
-            response = self._send_request(type, request, request_name, num_tries - 1)
-            logging.error(f'response to retry {self.retry_count} was "{response}"')
-            return response
-        else: # base case
-            self.record_error('\nEBB Serial Error.' +\
-                f'    Command: {request}\n    {error_type}: {response}')
-            return None
 
     def _check_and_record_ebb_error(self, response, type, request):
         '''
