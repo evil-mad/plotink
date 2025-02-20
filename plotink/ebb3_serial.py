@@ -445,6 +445,7 @@ class EBB3:
         if num_tries > 1: # recursive case
             self.retry_count += 1
             logging.error(f'    RETRY {self.retry_count}')
+            self.port.reset_input_buffer() # clear out any inputs from EBB prior to the new request
             response = self._send_request(type, request, request_name, num_tries - 1)
             logging.error(f'    RESPONSE TO RETRY {self.retry_count}: {response}')
             return response
