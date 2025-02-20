@@ -50,7 +50,7 @@ class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
     MIN_VERSION_STRING = "3.0.2"    # Minimum supported EBB firmware version.
-    readline_retry_max = 40
+    readline_retry_max = 4000000
 
     def __init__(self):
         self.port_name = None       # Port name (enumeration), if any
