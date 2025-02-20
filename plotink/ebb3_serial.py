@@ -227,7 +227,7 @@ class EBB3:
 
         verified = False
         try:
-            self.port = serial.Serial(self.port_name, timeout=.00001)  # 1 second timeout!
+            self.port = serial.Serial(self.port_name, timeout=1.0)  # 1 second timeout!
             self.port.reset_input_buffer() # Requires pyserial 3+.
 
             self.port.write('v\r'.encode('ascii'))    # Request version string.
@@ -405,7 +405,12 @@ class EBB3:
       def response_incomplete(the_response):
             return len(the_response) == 0 or the_response[-1] != "\n"
 
+      old_timeout = self.port.timeout
+
       try:
+        # set read timeout to very small so we don't block on waiting for readline to finish
+        self.port.timeout = .00001
+
         # send the request
         self.port.write((request + '\r').encode('ascii'))
 
@@ -448,6 +453,8 @@ class EBB3:
             self.record_error('\nEBB Serial Error.' +\
                 f'    Command: {request}\n    Response: {response}')
             return None
+      finally:
+        self.port.timeout = old_timeout
 
 
         '''
