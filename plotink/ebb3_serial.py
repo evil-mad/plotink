@@ -412,11 +412,13 @@ class EBB3:
         readline_retry_max = 25
 
         # send the request
-        self.port.write((request + '\r').encode('ascii'))
-
+ 
         if self.port.out_waiting > 0:
             # I expect this never to happen based on the pyserial docs. No write timeout is set, so write is blocking.
             logging.error(f'OUT_WAITING == {self.port.out_waiting}')
+
+        self.port.reset_output_buffer()
+        self.port.write((request + '\r').encode('ascii'))
 
         # and wait for a response
         responses = []
