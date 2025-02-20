@@ -227,7 +227,7 @@ class EBB3:
 
         verified = False
         try:
-            self.port = serial.Serial(self.port_name, timeout=1.0)  # 1 second timeout!
+            self.port = serial.Serial(self.port_name, timeout=.1)  # 1 second timeout!
             self.port.reset_input_buffer() # Requires pyserial 3+.
 
             self.port.write('v\r'.encode('ascii'))    # Request version string.
