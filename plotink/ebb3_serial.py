@@ -50,7 +50,6 @@ class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
     MIN_VERSION_STRING = "3.0.2"    # Minimum supported EBB firmware version.
-    readline_retry_max = 4000000
 
     def __init__(self):
         self.port_name = None       # Port name (enumeration), if any
@@ -409,7 +408,8 @@ class EBB3:
 
       try:
         # set read timeout to very small so we don't block on waiting for readline to finish
-        self.port.timeout = .00001
+        self.port.timeout = 1
+        readline_retry_max = 25
 
         # send the request
         self.port.write((request + '\r').encode('ascii'))
@@ -421,19 +421,19 @@ class EBB3:
         # and wait for a response
         responses = []
         n_retry_count = 0
-        # poll for response until we get any response and self.port indicates there is no more input, a maximum of self.readline_retry_max times  # TODO adjust/tune retries and timeout params
-        while (len(responses) == 0 or self.port.in_waiting > 0) and n_retry_count < self.readline_retry_max:
-            n_retry_count += 1
+        # poll for response until we get any response and self.port indicates there is no more input, a maximum of readline_retry_max times  # TODO adjust/tune retries and timeout params
+        while (len(responses) == 0 or self.port.in_waiting > 0) and n_retry_count < readline_retry_max:
             in_bytes = self.port.readline()
-            if len(in_bytes) == 0: # received nothing, keep trying
+            n_retry_count += 1
+            if len(in_bytes.decode('ascii').strip()) == 0: # received nothing, keep trying
                 continue
 
             # store in_bytes either as a new line (if no previous line or previous line is incomplete) or as an addition to the previous line
             if len(responses) == 0:
-                response.append(in_bytes)
-            elif responses[-1] == "\n":
                 responses.append(in_bytes)
-            else:
+            elif responses[-1] == "\n":  # previous line is complete
+                responses.append(in_bytes)
+            else: # previous line is incomplete
                 responses[-1] += in_bytes
 
         # evaluate the responses
