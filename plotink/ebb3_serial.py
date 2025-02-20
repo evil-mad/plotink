@@ -423,10 +423,18 @@ class EBB3:
         n_retry_count = 0
         # poll for response until we get any response and self.port indicates there is no more input, a maximum of self.readline_retry_max times  # TODO adjust/tune retries and timeout params
         while (len(responses) == 0 or self.port.in_waiting > 0) and n_retry_count < self.readline_retry_max:
-            next_line = self.port.readline()
-            if len(next_line) > 0:
-                responses.append(next_line)
             n_retry_count += 1
+            in_bytes = self.port.readline()
+            if len(in_bytes) == 0: # received nothing, keep trying
+                continue
+
+            # store in_bytes either as a new line (if no previous line or previous line is incomplete) or as an addition to the previous line
+            if len(responses) == 0:
+                response.append(in_bytes)
+            elif responses[-1] == "\n":
+                responses.append(in_bytes)
+            else:
+                responses[-1] += in_bytes
 
         # evaluate the responses
         response = ''
