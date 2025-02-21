@@ -392,11 +392,7 @@ class EBB3:
         `num_tries` is the number of times to try if something went wrong. "1" means no retries.
         return None if there's an error, otherwise return the response bytestring
       '''
-      old_timeout = self.port.timeout
-
       try:
-        # set read timeout to very small so we don't block on waiting for readline to finish
-        self.port.timeout = 1
         readline_retry_max = 25
 
         # send the request
@@ -456,8 +452,6 @@ class EBB3:
             self.record_error('\nEBB Serial Error.' +\
                 f'    Command: {request}\n    Response: {response}')
             return None
-      finally:
-        self.port.timeout = old_timeout
 
     def var_write(self, value, index):
         """
