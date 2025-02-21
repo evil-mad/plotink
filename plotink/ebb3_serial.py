@@ -315,8 +315,6 @@ class EBB3:
                 error_msg = f'USB communication error after command: {cmd}'
                 self.record_error(error_msg)
 
-        self._check_and_record_ebb_error(response, 'Command', cmd)
-
         return bool(self.err is None) # Return True if no error, False if error.
 
     def query(self, qry):
@@ -353,16 +351,12 @@ class EBB3:
                 self.record_error(error_msg)
                 return None
 
-        if self._check_and_record_ebb_error(response, 'Query', qry):
-            return None
-
         header_len = len(qry_name)
         if len(response) > header_len:      # Response is longer than the query length.
             if response[header_len] == ',': # Check if character after query is a comma.
                 header_len += 1             # If so, strip it out of response too.
 
         return response[header_len:] # Strip off leading repetition of command name.
-
 
     def query_statusbyte(self):
         '''
@@ -380,9 +374,6 @@ class EBB3:
         except (serial.SerialException, IOError, RuntimeError, OSError):
             error_msg = 'USB communication error after status byte query'
             self.record_error(error_msg)
-            return None
-
-        if self._check_and_record_ebb_error(response, 'Query', 'QG'):
             return None
 
         try:
@@ -432,6 +423,10 @@ class EBB3:
 
         if not response.startswith(request_name):
             raise RuntimeError(f'Received unexpected response after {n_poll_count} polls.')
+
+        if 'Err:' in response:
+            raise RuntimeError(f'Error reported by EBB after {n_poll_count} polls.')
+
         return response
       except RuntimeError as re:
         if num_tries > 1: # recursive case
@@ -443,28 +438,6 @@ class EBB3:
             self.record_error('\nEBB Serial Error.' +\
                 f'    Command: {request}\n    Response: {response}')
             return None
-
-         # four possibilities now
-         # len(response) == 0, aka a classic timeout
-         # len(response) != 0 and response[-1] != "\n", aka a timeout but received some information
-         # len(response) != 0 and response[-1] == "\n", aka no timeout
-         #        response.startswith(request_name) # yay
-         #        not response.startswith(request_name) # boo
-
-    def _check_and_record_ebb_error(self, response, type, request):
-        '''
-        `response` is the response from the EBB, encoded etc.
-        `type` is "command" or "query"
-        `request` is the previous command or query sent to the EBB
-        returns True if the ebb reported an error, else False
-        '''
-        if 'Err:' in response:
-            formatted_type = type.capitalize()
-            error_msg = 'Error reported by EBB.\n' +\
-               f'    {formatted_type}: {request}\n    Response: {response}'
-            self.record_error(error_msg)
-            return True
-        return False
 
     def var_write(self, value, index):
         """
