@@ -393,7 +393,7 @@ class EBB3:
         return None if there's an error, otherwise return the response bytestring
       '''
       try:
-        readline_retry_max = 25
+        readline_poll_max = 25
 
         # send the request
  
@@ -406,11 +406,11 @@ class EBB3:
 
         # and wait for a response
         responses = []
-        n_retry_count = 0
-        # poll for response until we get any response and self.port indicates there is no more input, a maximum of readline_retry_max times  # TODO adjust/tune retries and timeout params
-        while (len(responses) == 0 or self.port.in_waiting > 0) and n_retry_count < readline_retry_max: # TODO: pull out self.port.in_waiting so if in-waiting never timeout
+        n_poll_count = 0
+        # poll for response until we get any response and self.port indicates there is no more input, a maximum of readline_poll_max times  # TODO adjust/tune retries and timeout params
+        while (len(responses) == 0 or self.port.in_waiting > 0) and n_poll_count < readline_poll_max: # TODO: pull out self.port.in_waiting so if in-waiting never timeout
             in_bytes = self.port.readline()
-            n_retry_count += 1
+            n_poll_count += 1
             if len(in_bytes.decode('ascii').strip()) == 0: # received nothing, keep trying
                 continue
 
@@ -428,13 +428,13 @@ class EBB3:
             response = responses.pop().decode('ascii').strip() # we only care about the last response; previous responses are probably related to prior writes and irrelevant here
 
         if len(response) == 0 and len(responses) == 0:
-            raise RuntimeError(f'Timed out with no response (or empty responses) after {n_retry_count} tries.')
+            raise RuntimeError(f'Timed out with no response (or empty responses) after {n_poll_count} polls.')
 
         if not response.startswith(request_name):
-            raise RuntimeError(f'Received unexpected response after {n_retry_count} tries.')
+            raise RuntimeError(f'Received unexpected response after {n_poll_count} polls.')
 
         if 'Err:' in response:
-            raise RuntimeError(f'Error reported by EBB after {n_retry_count} tries.')
+            raise RuntimeError(f'Error reported by EBB after {n_poll_count} polls.')
 
         return response
       except RuntimeError as re:
