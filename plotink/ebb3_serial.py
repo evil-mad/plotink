@@ -401,7 +401,7 @@ class EBB3:
             # I expect this never to happen based on the pyserial docs. No write timeout is set, so write is blocking.
             logging.error(f'OUT_WAITING == {self.port.out_waiting}')
 
-        self.port.reset_output_buffer() # TODO is this possibly the cause of "expected comma" and "extra param" errors? Am I sure that this fixes the "unkown command" errors?
+        # self.port.reset_output_buffer() # TODO is this possibly the cause of "expected comma" and "extra param" errors? Am I sure that this fixes the "unkown command" errors?
         self.port.write((request + '\r').encode('ascii'))
 
         # and wait for a response
