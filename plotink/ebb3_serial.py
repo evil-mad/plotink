@@ -384,7 +384,7 @@ class EBB3:
         except (TypeError, ValueError):
             return None
 
-    def _send_request(self, type, request, request_name, num_tries = 2):
+    def _send_request(self, type, request, request_name, num_tries = 3):
       '''
         `type` is 'command' or 'query'
         `request` is the command or query to send to the EBB
