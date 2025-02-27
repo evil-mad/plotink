@@ -393,33 +393,27 @@ class EBB3:
         return None if there's an error, otherwise return the response bytestring
       '''
       try:
-        readline_poll_max = 25
+        readline_poll_max = 40
 
         # send the request
- 
-        if self.port.out_waiting > 0:
-            # I expect this never to happen based on the pyserial docs. No write timeout is set, so write is blocking.
-            logging.error(f'OUT_WAITING == {self.port.out_waiting}')
-
-        # self.port.reset_output_buffer() # TODO is this possibly the cause of "expected comma" and "extra param" errors? Am I sure that this fixes the "unkown command" errors?
         self.port.write((request + '\r').encode('ascii'))
 
         # and wait for a response
         responses = []
         n_poll_count = 0
-        # poll for response until we get any response and self.port indicates there is no more input, a maximum of readline_poll_max times  # TODO adjust/tune retries and timeout params
-        while (len(responses) == 0 or self.port.in_waiting > 0) and n_poll_count < readline_poll_max: # TODO: pull out self.port.in_waiting so if in-waiting never timeout
+        # poll for response until we get any response and self.port indicates there is no more input, a maximum of readline_poll_max times  
+        while (len(responses) == 0 or self.port.in_waiting > 0) and n_poll_count < readline_poll_max:
             in_bytes = self.port.readline()
             n_poll_count += 1
             if len(in_bytes.decode('ascii').strip()) == 0: # received nothing, keep trying
                 continue
 
-            # store in_bytes either as a new line (if no previous line or previous line is incomplete) or as an addition to the previous line
+            # store in_bytes either as a new line (if no previous line or previous line is complete) or as an addition to the previous line
             if len(responses) == 0:
                 responses.append(in_bytes)
-            elif responses[-1] == "\n":  # previous line is complete
+            elif responses[-1][-1] == "\n":  # previous line (responses[-1]) is complete, indicated by its last character (response[-1][-1]) being a newline
                 responses.append(in_bytes)
-            else: # previous line is incomplete
+            else: # previous line is incomplete; don't create a new entry in responses
                 responses[-1] += in_bytes
 
         # evaluate the responses
@@ -427,7 +421,7 @@ class EBB3:
         while len(response) == 0 and len(responses) != 0:
             response = responses.pop().decode('ascii').strip() # we only care about the last response; previous responses are probably related to prior writes and irrelevant here
 
-        if len(response) == 0 and len(responses) == 0:
+        if len(response) == 0:
             raise RuntimeError(f'Timed out with no response (or empty responses) after {n_poll_count} polls.')
 
         if not response.startswith(request_name):
