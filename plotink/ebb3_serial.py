@@ -428,7 +428,16 @@ class EBB3:
             raise RuntimeError(f'Error reported by EBB after {n_poll_count} polls.')
 
         return response
-      except RuntimeError as re:
+      except RuntimeError as err:
+        if 'Timed out' in err.args[0]:
+            # it may not be appropriate to retry without knowing whether or not EBB received and executed the command
+            # if the command was idempotent, we can safely retry:
+            #       if the command starts with "Q", it's a query and can be safely retried
+            #       also "SP" (set pen position) and "CU" (configure settings)
+            if request_name[0] != 'Q' and request_name not in ["SP", "CU"]:
+                raise
+
+        # retries!
         if num_tries > 1: # recursive case
             self.retry_count += 1
             self.port.reset_input_buffer() # clear out any inputs from EBB prior to the new request
