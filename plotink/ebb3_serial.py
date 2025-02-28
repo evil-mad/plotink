@@ -408,7 +408,7 @@ class EBB3:
             # store in_bytes either as a new line (if no previous line or previous line is complete) or as an addition to the previous line
             if len(responses) == 0:
                 responses.append(in_bytes)
-            elif responses[-1][-1] == "\n":  # previous line (responses[-1]) is complete, indicated by its last character (response[-1][-1]) being a newline
+            elif responses[-1].decode('ascii')[-1] == "\n":  # previous line (responses[-1]) is complete, indicated by its last character (responses[-1], decoded, [-1]) being a newline
                 responses.append(in_bytes)
             else: # previous line is incomplete; don't create a new entry in responses
                 responses[-1] += in_bytes
