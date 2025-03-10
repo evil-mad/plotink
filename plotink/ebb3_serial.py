@@ -44,8 +44,6 @@ from serial.tools.list_ports import comports \
     #pylint: disable=wrong-import-position, wrong-import-order
 
 
-import logging
-
 class EBB3:
     ''' EBB3: Class for managing EiBotBoard connectivity '''
 
@@ -122,7 +120,6 @@ class EBB3:
         ''' Record error, if it is the first error '''
         if self.err is None:
             self.err = message
-            logging.error(message)
 
 
     def _get_port_name(self, given_name=None):
@@ -432,17 +429,12 @@ class EBB3:
 
         return response
       except RuntimeError as re:
-        logging.error(f'USB ERROR: {re}.\n' +
-                f'    Command: {request}\n    Response: {response}')
         if num_tries > 1: # recursive case
             self.retry_count += 1
-            logging.error(f'    RETRY {self.retry_count}')
             self.port.reset_input_buffer() # clear out any inputs from EBB prior to the new request
             response = self._send_request(type, request, request_name, num_tries - 1)
-            logging.error(f'    RESPONSE TO RETRY {self.retry_count}: {response}')
             return response
         else: # base case
-            logging.error(f'    NOT RETRYING')
             self.record_error('\nEBB Serial Error.' +\
                 f'    Command: {request}\n    Response: {response}')
             return None
