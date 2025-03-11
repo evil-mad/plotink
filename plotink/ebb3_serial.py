@@ -307,7 +307,7 @@ class EBB3:
             cmd_name = cmd[0:2]     # All other cases: Command names are two letters long.
 
         try:
-            response = self._send_request('command', cmd, cmd_name)
+            response = self._send_request(cmd, cmd_name)
             if response is None:
                 return False
         except (serial.SerialException, IOError, RuntimeError, OSError):
@@ -342,7 +342,7 @@ class EBB3:
             qry_name = qry[0:2]     # Cases except QU: Query responses are two letters long.
 
         try:
-            response = self._send_request('query', qry, qry_name)
+            response = self._send_request(qry, qry_name)
             if response is None:
                 return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
@@ -368,7 +368,7 @@ class EBB3:
             return None
 
         try:
-            response = self._send_request('query', 'QG', 'QG')
+            response = self._send_request('QG', 'QG')
             if response is None:
                 return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
@@ -381,9 +381,8 @@ class EBB3:
         except (TypeError, ValueError):
             return None
 
-    def _send_request(self, type, request, request_name, num_tries = 3):
+    def _send_request(self, request, request_name, num_tries = 3):
       '''
-        `type` is 'command' or 'query'
         `request` is the command or query to send to the EBB
         `request_name` is the short name of `request`
         `num_tries` is the number of times to try if something went wrong. "1" means no retries.
@@ -441,7 +440,7 @@ class EBB3:
         if num_tries > 1: # recursive case
             self.retry_count += 1
             self.port.reset_input_buffer() # clear out any inputs from EBB prior to the new request
-            response = self._send_request(type, request, request_name, num_tries - 1)
+            response = self._send_request(request, request_name, num_tries - 1)
             return response
         else: # base case
             self.record_error('\nEBB Serial Error.' +\
