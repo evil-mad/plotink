@@ -57,7 +57,9 @@ class EBB3:
         self.name = None            # EBB "nickname," if known
         self.err = None             # None, or a string giving first fatal error message.
         self.caller = None          # None, or a string indicating which program opened the port
-
+        self.retry_count = 0        # A counter keeping track of how many times a command or
+                                    # query had to be retried due to timing out or an unexpected
+                                    # response from the EBB
 
     def find_first(self):
         '''
@@ -304,36 +306,16 @@ class EBB3:
         else:
             cmd_name = cmd[0:2]     # All other cases: Command names are two letters long.
 
-        response = ''
         try:
-            self.port.write((cmd + '\r').encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
-
-            n_retry_count = 0
-            while len(response) == 0 and n_retry_count < 25:
-                # get new response to replace null response if necessary
-                response = self.port.readline().decode('ascii').strip()
-                n_retry_count += 1
-
-            if not response.startswith(cmd_name):
-                if response:
-                    error_msg = '\nUnexpected response from EBB.' +\
-                       f'    Command: {cmd}\n    Response: {response}'
-                else:
-                    error_msg = f'EBB Serial Timeout after command: {cmd}'
-                self.record_error(error_msg)
-
+            response = self._send_request(cmd, cmd_name)
+            if response is None:
+                return False
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if cmd_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after command: {cmd}'
                 self.record_error(error_msg)
-        if 'Err:' in response:
-            error_msg = 'Error reported by EBB.\n' +\
-               f'    Command: {cmd}\n    Response: {response}'
-            self.record_error(error_msg)
 
         return bool(self.err is None) # Return True if no error, False if error.
-
 
     def query(self, qry):
         '''
@@ -359,31 +341,15 @@ class EBB3:
         else:
             qry_name = qry[0:2]     # Cases except QU: Query responses are two letters long.
 
-        response = ''
         try:
-            self.port.write((qry + '\r').encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
-
-            n_retry_count = 0
-            while len(response) == 0 and n_retry_count < 25:
-                # get new response to replace null response if necessary
-                response = self.port.readline().decode('ascii').strip()
-                n_retry_count += 1
-
+            response = self._send_request(qry, qry_name)
+            if response is None:
+                return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
             if qry_name.lower() not in ["rb", "r", "bl"]: # Ignore err on these commands
                 error_msg = f'USB communication error after query: {qry}'
                 self.record_error(error_msg)
                 return None
-
-        if ('Err:' in response) or (not response.startswith(qry_name)):
-            if response:
-                error_msg = '\nUnexpected response from EBB.' +\
-                   f'    Query: {qry}\n    Response: {response}'
-            else:
-                error_msg = f'EBB Serial Timeout after query: {qry}'
-            self.record_error(error_msg)
-            return None
 
         header_len = len(qry_name)
         if len(response) > header_len:      # Response is longer than the query length.
@@ -391,7 +357,6 @@ class EBB3:
                 header_len += 1             # If so, strip it out of response too.
 
         return response[header_len:] # Strip off leading repetition of command name.
-
 
     def query_statusbyte(self):
         '''
@@ -402,32 +367,84 @@ class EBB3:
         if (self.port is None) or (self.err is not None):
             return None
 
-        response = ''
         try:
-            self.port.write('QG\r'.encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
-
-            if not response.startswith('QG'):
-                if response:
-                    error_msg = '\nUnexpected response from EBB.' +\
-                       f'    Response to QG query: {response}'
-                else:
-                    error_msg = 'EBB Serial Timeout while reading status byte.'
-                self.record_error(error_msg)
-
+            response = self._send_request('QG', 'QG')
+            if response is None:
+                return None
         except (serial.SerialException, IOError, RuntimeError, OSError):
             error_msg = 'USB communication error after status byte query'
             self.record_error(error_msg)
             return None
 
-        if 'Err:' in response:
-            error_msg = 'Error reported by EBB.\n' +\
-               f'    Query: QG\n    Response: {response}'
-            self.record_error(error_msg)
-            return None
         try:
             return int(response[3:], 16) # Strip off query name ("QG,") and convert to int.
         except (TypeError, ValueError):
+            return None
+
+    def _send_request(self, request, request_name, num_tries = 3):
+      '''
+        `request` is the command or query to send to the EBB
+        `request_name` is the short name of `request`
+        `num_tries` is the number of times to try if something went wrong. "1" means no retries.
+        return None if there's an error, otherwise return the response bytestring
+      '''
+      try:
+        readline_poll_max = 25
+
+        # send the request
+        self.port.write((request + '\r').encode('ascii'))
+
+        # and wait for a response
+        responses = []
+        n_poll_count = 0
+        # poll for response until we get any response and self.port indicates there is no more input, a maximum of readline_poll_max times  
+        while (len(responses) == 0 or self.port.in_waiting > 0) and n_poll_count < readline_poll_max:
+            in_bytes = self.port.readline()
+            n_poll_count += 1
+            if len(in_bytes.decode('ascii').strip()) == 0: # received nothing, keep polling
+                continue
+
+            # store in_bytes either as a new line (if no previous line or previous line is complete) or as an addition to the previous line
+            if len(responses) == 0:
+                responses.append(in_bytes)
+            elif responses[-1].decode('ascii')[-1] == "\n":  # previous line (responses[-1]) is complete, indicated by its last character (responses[-1], decoded, [-1]) being a newline
+                responses.append(in_bytes)
+            else: # previous line is incomplete; don't create a new entry in responses
+                responses[-1] += in_bytes
+
+        # evaluate the responses
+        response = ''
+        while len(response) == 0 and len(responses) != 0:
+            response = responses.pop().decode('ascii').strip() # we only care about the last response; previous responses are probably related to prior writes and irrelevant here
+
+        if len(response) == 0:
+            raise RuntimeError(f'Timed out with no response (or empty responses) after {n_poll_count} polls.')
+
+        if not response.startswith(request_name):
+            raise RuntimeError(f'Received unexpected response after {n_poll_count} polls.')
+
+        if 'Err:' in response:
+            raise RuntimeError(f'Error reported by EBB after {n_poll_count} polls.')
+
+        return response
+      except RuntimeError as err:
+        if 'Timed out' in err.args[0]:
+            # it may not be appropriate to retry without knowing whether or not EBB received and executed the command
+            # if the command was idempotent, we can safely retry:
+            #       if the command starts with "Q", it's a query and can be safely retried
+            #       also "SP" (set pen position) and "CU" (configure settings)
+            if request_name[0] != 'Q' and request_name not in ["SP", "CU"]:
+                raise
+
+        # retries!
+        if num_tries > 1: # recursive case
+            self.retry_count += 1
+            self.port.reset_input_buffer() # clear out any inputs from EBB prior to the new request
+            response = self._send_request(request, request_name, num_tries - 1)
+            return response
+        else: # base case
+            self.record_error('\nEBB Serial Error.' +\
+                f'    Command: {request}\n    Response: {response}')
             return None
 
     def var_write(self, value, index):
