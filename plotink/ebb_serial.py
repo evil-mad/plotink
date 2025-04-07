@@ -49,6 +49,8 @@ from serial.tools.list_ports import comports \
 
 logger = logging.getLogger(__name__)
 
+command_log = None
+
 def version():
     '''Version number for this document'''
     return __version__
@@ -302,6 +304,21 @@ def testPort(port_name):
     return None
 
 
+def startLogging(logfile):
+    global command_log
+    if logfile and not command_log:
+        try:
+            command_log = open(logfile, 'wb')
+        except PermissionError:
+            command_log = None  # be explicit
+
+
+def stopLogging():
+    global command_log
+    if command_log:
+        command_log.close()
+
+
 def openPort():
     '''
     Find and open a port to a single attached EiBotBoard.
@@ -379,6 +396,8 @@ def command(port_name, cmd, verbose=True):
     '''General command to send a command to the EiBotBoard'''
     if port_name is not None and cmd is not None:
         try:
+            if command_log:
+                command_log.write(cmd.encode('ascii'))
             port_name.write(cmd.encode('ascii'))
             response = port_name.readline().decode('ascii')
             n_retry_count = 0
