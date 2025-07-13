@@ -1104,3 +1104,20 @@ class GetLengthTestCase(unittest.TestCase):
         mock_obj = MockObject({"width": "50%"})
         result = plot_utils.getLengthInches(mock_obj, "width")
         self.assertIsNone(result)
+
+    def test_subdivide_cubic_path_zero_tolerance(self):
+        """Test subdivideCubicPath with zero tolerance (infinite loop prevention)"""
+        # Create a simple cubic path with 2 points
+        s_p = [[[0, 0], [0, 0], [1, 1]], [[1, 1], [2, 2], [3, 3]]]
+        # This should return immediately without infinite loop
+        result = plot_utils.subdivideCubicPath(s_p, 0)
+        self.assertIsNone(result)  # Function returns None
+        # Path should remain unchanged
+        self.assertEqual(len(s_p), 2)
+
+    def test_subdivide_cubic_path_negative_tolerance(self):
+        """Test subdivideCubicPath with negative tolerance"""
+        s_p = [[[0, 0], [0, 0], [1, 1]], [[1, 1], [2, 2], [3, 3]]]
+        result = plot_utils.subdivideCubicPath(s_p, -0.5)
+        self.assertIsNone(result)  # Function returns None
+        self.assertEqual(len(s_p), 2)  # Path unchanged

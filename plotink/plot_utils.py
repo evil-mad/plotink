@@ -404,6 +404,9 @@ def subdivideCubicPath(s_p, flat, i=1):
     call because it caused recursion-depth errors on complicated line segments.
     """
 
+    if flat <= 0:   # Prevent infinite loop with zero or negative tolerance
+        return      # No subdivision needed/possible with invalid tolerance
+
     while True:
         while True:
             if i >= len(s_p):
