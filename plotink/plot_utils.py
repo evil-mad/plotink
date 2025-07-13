@@ -561,6 +561,7 @@ def userUnitToUnits(distance_uu, unit_string):
 
 def vb_scale(v_b, p_a_r, doc_width, doc_height):
     """"
+    [Deprecated in favor of vb_scale_2()]
     Parse SVG viewbox and generate scaling parameters.
     Reference documentation: https://www.w3.org/TR/SVG11/coords.html
 
@@ -572,7 +573,9 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
 
     Output: s_x, s_y, o_x, o_y
         Scale parameters (s_x,s_y) and offset parameters (o_x,o_y)
+        Returns default transform values (1, 1, 0, 0) in case of invalid viewbox.
 
+    This function is _deprecated_ in favor of vb_scale_2(),
     """
     if v_b is None:
         return 1, 1, 0, 0 # No viewbox; return default transform
