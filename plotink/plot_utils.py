@@ -13,7 +13,7 @@ See __version__ below for version information
 
 The MIT License (MIT)
 
-Copyright (c) 2024 Windell H. Oskay, Bantam Tools
+Copyright (c) 2025 Windell H. Oskay, Bantam Tools
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -42,9 +42,11 @@ simplepath = from_dependency_import('ink_extensions.simplepath')
 bezmisc = from_dependency_import('ink_extensions.bezmisc')
 ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
+
 def version():    # Version number for this document
     """Return version number of this script"""
-    return "0.4.1" # Dated 2024-05-13
+    return "0.5.0"  # Dated 2025-07-13
+
 
 __version__ = version()
 
@@ -66,6 +68,7 @@ trivial_svg = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
        width="297mm">
     </svg>
     """
+
 
 def checkLimits(value, lower_bound, upper_bound):
     """
@@ -122,11 +125,11 @@ def clip_code(x_in, y_in, x_min, x_max, y_min, y_max):
     if x_in < x_min:
         code = 1  # Left
     if x_in > x_max:
-        code |= 2 # Right
+        code |= 2  # Right
     if y_in < y_min:
-        code |= 4 # Top
+        code |= 4  # Top
     if y_in > y_max:
-        code |= 8 # Bottom
+        code |= 8  # Bottom
     return code
 
 
@@ -154,18 +157,18 @@ def clip_segment(segment, bounds):
 
     iterations = 0
 
-    while True: # Repeat until return
+    while True:  # Repeat until return
         code_1 = clip_code(x_1, y_1, x_min, x_max, y_min, y_max)
         code_2 = clip_code(x_2, y_2, x_min, x_max, y_min, y_max)
 
         # Trivial accept:
         if code_1 == 0 and code_2 == 0:
-            return True, segment # Both endpoints are within bounds.
+            return True, segment  # Both endpoints are within bounds.
         # Trivial reject, if both endpoints are outside, and on the same side:
         if code_1 & code_2:
-            return False, segment # Verify with bitwise AND.
-        if iterations > 3: # Failsafe; exit if the value has not converged;
-            return True, segment # Avoids infinite loops near precision limits.
+            return False, segment  # Verify with bitwise AND.
+        if iterations > 3:  # Failsafe; exit if the value has not converged;
+            return True, segment  # Avoids infinite loops near precision limits.
 
         # Otherwise, at least one point is out of bounds; not trivial.
         if code_1 != 0:
@@ -175,22 +178,22 @@ def clip_segment(segment, bounds):
 
         # Clip at a single boundary; may need to do this up to twice per vertex
 
-        if code & 1: # Vertex on LEFT side of bounds:
+        if code & 1:  # Vertex on LEFT side of bounds:
             x_new = x_min  # Find intersection of our segment with x_min
             slope = (y_2 - y_1) / (x_2 - x_1)
             y_new = slope * (x_min - x_1) + y_1
 
         elif code & 2:  # Vertex on RIGHT side of bounds:
-            x_new = x_max # Find intersection of our segment with x_max
+            x_new = x_max  # Find intersection of our segment with x_max
             slope = (y_2 - y_1) / (x_2 - x_1)
             y_new = slope * (x_max - x_1) + y_1
 
-        elif code & 4: # Vertex on TOP side of bounds:
+        elif code & 4:  # Vertex on TOP side of bounds:
             y_new = y_min  # Find intersection of our segment with y_min
             slope = (x_2 - x_1) / (y_2 - y_1)
             x_new = slope * (y_min - y_1) + x_1
 
-        elif code & 8: # Vertex on BOTTOM side of bounds:
+        elif code & 8:  # Vertex on BOTTOM side of bounds:
             y_new = y_max  # Find intersection of our segment with y_max
             slope = (x_2 - x_1) / (y_2 - y_1)
             x_new = slope * (y_max - y_1) + x_1
@@ -201,7 +204,7 @@ def clip_segment(segment, bounds):
         else:
             x_2 = x_new
             y_2 = y_new
-        segment = [[x_1, y_1], [x_2, y_2]] # Now checking this clipped segment
+        segment = [[x_1, y_1], [x_2, y_2]]  # Now checking this clipped segment
         iterations += 1
 
 
@@ -220,7 +223,7 @@ def distance(x_in, y_in):
 def dotProductXY(input_vector_first, input_vector_second):
     """Dot product of vectors"""
     temp = input_vector_first[0] * input_vector_second[0] +\
-                    input_vector_first[1] * input_vector_second[1]
+        input_vector_first[1] * input_vector_second[1]
     if temp > 1:
         return 1
     if temp < -1:
@@ -373,19 +376,19 @@ def unitsToUserUnits(input_string, percent_ref=None):
         if percent_ref:
             return float(value) * float(percent_ref) / 100.0
         return float(value) / 100.0
-    return None # Handle case of cnsupported units
+    return None  # Handle case of cnsupported units
 
 
-def position_scale (x_value, y_value, units_code):
+def position_scale(x_value, y_value, units_code):
     '''
     Format XY position data to be returned to user
     x_value, y_value inputs are in inches.
     Output set by units_code: 1 for cm, 2 for mm, 0 (or otherwise) for inch.
     '''
-    if units_code == 1 : # If using centimeter units
+    if units_code == 1:  # If using centimeter units
         x_value = x_value * 2.54
         y_value = y_value * 2.54
-    if units_code == 2: # If using millimeter units
+    if units_code == 2:  # If using millimeter units
         x_value = x_value * 25.4
         y_value = y_value * 25.4
     return x_value, y_value
@@ -400,6 +403,9 @@ def subdivideCubicPath(s_p, flat, i=1):
     This is a modified version of cspsubdiv.cspsubdiv(). I rewrote the recursive
     call because it caused recursion-depth errors on complicated line segments.
     """
+
+    if flat <= 0:   # Prevent infinite loop with zero or negative tolerance
+        return      # No subdivision needed/possible with invalid tolerance
 
     while True:
         while True:
@@ -423,7 +429,7 @@ def subdivideCubicPath(s_p, flat, i=1):
         s_p[i:1] = [p_list]
 
 
-def points_in_tolerance(input_points, tolerance): # pylint: disable=too-many-locals
+def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-locals
     """
     Return True if a set of points is within tolerance of a line segment.
 
@@ -448,14 +454,14 @@ def points_in_tolerance(input_points, tolerance): # pylint: disable=too-many-loc
     s_delta_x = seg_1x - seg_0x
     s_delta_y = seg_1y - seg_0y
 
-    for point in input_points[1:-1]: # All vertices except first and last
+    for point in input_points[1:-1]:  # All vertices except first and last
         p_x, p_y = point
         dx_p_s0 = p_x - seg_0x
         dy_p_s0 = p_y - seg_0y
 
-        temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y # First dot product
+        temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y  # First dot product
         if temp1 <= 0:
-            if ( dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0 ) >= tol_squared:
+            if (dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0) >= tol_squared:
                 return False
             continue
 
@@ -466,7 +472,7 @@ def points_in_tolerance(input_points, tolerance): # pylint: disable=too-many-loc
             continue
 
         if seg_length_squared == 0:
-            return False # Zero-length segment; exit.
+            return False  # Zero-length segment; exit.
         temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
         if (temp * temp / seg_length_squared) >= tol_squared:
             return False
@@ -511,23 +517,24 @@ def supersample(vertices, tolerance):
     If B cannot be removed, then move onto vertex C, and perform the same checks,
     until the end of the vertex list is reached.
     """
-    if len(vertices) <= 2: # there is nothing to delete
+    if len(vertices) <= 2:  # there is nothing to delete
         return
 
     if tolerance <= 0:
         return
 
-    start_index = 0 # can't remove first vertex
+    start_index = 0  # can't remove first vertex
     while start_index < len(vertices) - 2:
         end_index = start_index + 2
         # test the removal of (start_index, end_index), exclusive until we can't advance end_index
 
         while (points_in_tolerance(vertices[start_index:end_index + 1], tolerance)
                and end_index < len(vertices)):
-            end_index += 1 # try removing the next vertex too
+            end_index += 1  # try removing the next vertex too
 
-        vertices[start_index + 1:end_index - 1] = [] # delete (start_index, end_index), exclusive
+        vertices[start_index + 1:end_index - 1] = []  # delete (start_index, end_index), exclusive
         start_index += 1
+
 
 def userUnitToUnits(distance_uu, unit_string):
     """
@@ -561,6 +568,7 @@ def userUnitToUnits(distance_uu, unit_string):
 
 def vb_scale(v_b, p_a_r, doc_width, doc_height):
     """"
+    [Deprecated in favor of vb_scale_2()]
     Parse SVG viewbox and generate scaling parameters.
     Reference documentation: https://www.w3.org/TR/SVG11/coords.html
 
@@ -572,34 +580,38 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
 
     Output: s_x, s_y, o_x, o_y
         Scale parameters (s_x,s_y) and offset parameters (o_x,o_y)
+        Returns default transform values (1, 1, 0, 0) in case of invalid viewbox.
 
+    This function is _deprecated_ in favor of vb_scale_2(),
+        which functions identically except that it returns None in the case of an
+        invalid viewbox. Presently maintained for backward compatibility.
     """
     if v_b is None:
-        return 1, 1, 0, 0 # No viewbox; return default transform
+        return 1, 1, 0, 0  # No viewbox; return default transform
     vb_array = v_b.strip().replace(',', ' ').split()
 
     if len(vb_array) < 4:
-        return 1, 1, 0, 0 # invalid viewbox; return default transform
+        return 1, 1, 0, 0  # invalid viewbox; return default transform
 
-    min_x = float(vb_array[0]) # viewbox offset: x
-    min_y = float(vb_array[1]) # viewbox offset: y
-    width = float(vb_array[2]) # viewbox width
-    height = float(vb_array[3]) # viewbox height
+    min_x = float(vb_array[0])  # viewbox offset: x
+    min_y = float(vb_array[1])  # viewbox offset: y
+    width = float(vb_array[2])  # viewbox width
+    height = float(vb_array[3])  # viewbox height
 
     if width <= 0 or height <= 0:
-        return 1, 1, 0, 0 # invalid viewbox; return default transform
+        return 1, 1, 0, 0  # invalid viewbox; return default transform
 
     d_width = float(doc_width)
     d_height = float(doc_height)
 
     if d_width <= 0 or d_height <= 0:
-        return 1, 1, 0, 0 # invalid document size; return default transform
+        return 1, 1, 0, 0  # invalid document size; return default transform
 
-    ar_doc = d_height / d_width # Document aspect ratio
-    ar_vb = height / width      # viewbox aspect ratio
+    ar_doc = d_height / d_width  # Document aspect ratio
+    ar_vb = height / width  # viewbox aspect ratio
 
     # Default values of the two preserveAspectRatio parameters:
-    par_align = "xmidymid" # "align" parameter (lowercased)
+    par_align = "xmidymid"  # "align" parameter (lowercased)
     par_mos = "meet"       # "meetOrSlice" parameter
 
     if p_a_r is not None:
@@ -621,7 +633,7 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
         # This is not default behavior, nor what happens if par_align
         # is not given; the "none" value must be _explicitly_ specified.
 
-        s_x = d_width/ width
+        s_x = d_width / width
         s_y = d_height / height
         o_x = -min_x
         o_y = -min_y
@@ -654,7 +666,7 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
         # Case 1: Scale document up until viewbox fills doc in X.
 
         s_x = d_width / width
-        s_y = s_x # Uniform aspect ratio
+        s_y = s_x  # Uniform aspect ratio
         o_x = -min_x
 
         scaled_vb_height = ar_doc * width
@@ -668,7 +680,7 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
             # Case: Y-Max: Align viewbox to maximum Y of the viewport.
             o_y = -min_y + excess_height
 
-        else: # par_align in {"xminymid", "xmidymid", "xmaxymid"}:
+        else:  # par_align in {"xminymid", "xmidymid", "xmaxymid"}:
             # Default case: Y-Mid: Center viewbox on page in Y
             o_y = -min_y + excess_height / 2
 
@@ -677,23 +689,162 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
     # Case 2: Scale document up until viewbox fills doc in Y.
 
     s_y = d_height / height
-    s_x = s_y # Uniform aspect ratio
+    s_x = s_y  # Uniform aspect ratio
     o_y = -min_y
 
     scaled_vb_width = height / ar_doc
     excess_width = scaled_vb_width - width
 
     if par_align in {"xminymin", "xminymid", "xminymax"}:
-        o_x = -min_x # Case: X-Min: Align viewbox to minimum X of the viewport.
+        o_x = -min_x  # Case: X-Min: Align viewbox to minimum X of the viewport.
 
     elif par_align in {"xmaxymin", "xmaxymid", "xmaxymax"}:
-        o_x = -min_x + excess_width # Case: X-Max: Align viewbox to maximum X of the viewport.
+        o_x = -min_x + excess_width  # Case: X-Max: Align viewbox to maximum X of the viewport.
 
-    else: # par_align in {"xmidymin", "xmidymid", "xmidymax"}:
-        o_x = -min_x + excess_width / 2 # Default case: X-Mid: Center viewbox on page in X
+    else:  # par_align in {"xmidymin", "xmidymid", "xmidymax"}:
+        o_x = -min_x + excess_width / 2  # Default case: X-Mid: Center viewbox on page in X
 
     return s_x, s_y, o_x, o_y
-    # return 1, 1, 0, 0 # Catch-all: return default transform
+    # return 1, 1, 0, 0  # Catch-all: return default transform
+
+
+def _validate_viewbox(viewbox_string, doc_width, doc_height):
+    """
+    Validate viewBox parameters and return parsed values or None if invalid.
+
+    Returns:
+        tuple (min_x, min_y, width, height, d_width, d_height) for valid viewBox
+        None for invalid viewBox
+    """
+    if viewbox_string is None:
+        return None
+
+    try:
+        vb_array = viewbox_string.strip().replace(',', ' ').split()
+    except AttributeError:
+        return None
+
+    if len(vb_array) < 4:
+        return None
+
+    try:
+        min_x = float(vb_array[0])
+        min_y = float(vb_array[1])
+        width = float(vb_array[2])
+        height = float(vb_array[3])
+    except (ValueError, IndexError):
+        return None
+
+    if width <= 0 or height <= 0:
+        return None
+
+    d_width = float(doc_width)
+    d_height = float(doc_height)
+
+    if d_width <= 0 or d_height <= 0:
+        return None
+
+    return min_x, min_y, width, height, d_width, d_height
+
+
+def vb_scale_2(viewbox_string, preserve_aspect_ratio, doc_width, doc_height):
+    """
+    Enhanced version of vb_scale that returns None for invalid viewBox.
+
+    Parse SVG viewbox and generate scaling parameters.
+    Reference documentation: https://www.w3.org/TR/SVG11/coords.html
+
+    Inputs:
+        viewbox_string:      Contents of SVG viewbox attribute
+        preserve_aspect_ratio: Contents of SVG preserveAspectRatio attribute
+        doc_width:          Width of SVG document (in inches)
+        doc_height:         Height of SVG document (in inches)
+
+    Returns:
+        tuple (s_x, s_y, o_x, o_y) for valid viewBox - scale and offset parameters
+        None for invalid viewBox
+    """
+    validated = _validate_viewbox(viewbox_string, doc_width, doc_height)
+    if validated is None:
+        return None
+
+    min_x, min_y, width, height, d_width, d_height = validated
+
+    # Use the same logic as the original vb_scale function
+    ar_doc = d_height / d_width  # Document aspect ratio
+    ar_vb = height / width  # viewbox aspect ratio
+
+    # Default values of the two preserveAspectRatio parameters:
+    par_mos = "meet"  # meetOrSlice parameter can be "meet" or "slice"
+    par_align = "xmidymid"  # alignment parameter
+
+    if preserve_aspect_ratio is not None:
+        p_a_r_string = preserve_aspect_ratio.strip()
+        par_list = p_a_r_string.split()
+        if len(par_list) > 0:
+            # First parameter of preserveAspectRatio is the alignment parameter
+            # Values like "none", "xMinYMin", "xMidYMin", etc. are valid values.
+            par_align = par_list[0].lower()
+        if len(par_list) > 1:
+            # Second parameter of preserveAspectRatio is the meetOrSlice parameter
+            # Values include "meet" and "slice"
+            par_mos = par_list[1].lower()
+
+    if par_align == "none":
+        # Easy case -- no aspect ratio preservation needed
+        s_x = d_width / width
+        s_y = d_height / height
+        o_x = -min_x
+        o_y = -min_y
+        return s_x, s_y, o_x, o_y
+
+    # Preserve aspect ratio:
+    # Apply scaling to align the viewbox to the viewport.
+
+    if (((ar_doc >= ar_vb) and (par_mos == "meet"))
+            or ((ar_doc < ar_vb) and (par_mos == "slice"))):
+        # Case 1: Scale document up until viewbox fills doc in X.
+
+        s_x = d_width / width
+        s_y = s_x  # Uniform aspect ratio
+        o_x = -min_x
+
+        scaled_vb_height = ar_doc * width
+        excess_height = scaled_vb_height - height
+
+        if par_align in {"xminymin", "xmidymin", "xmaxymin"}:
+            # Case: Y-Min: Align viewbox to minimum Y of the viewport.
+            o_y = -min_y
+
+        elif par_align in {"xminymax", "xmidymax", "xmaxymax"}:
+            # Case: Y-Max: Align viewbox to maximum Y of the viewport.
+            o_y = -min_y + excess_height
+
+        else:  # par_align in {"xminymid", "xmidymid", "xmaxymid"}:
+            # Default case: Y-Mid: Center viewbox on page in Y
+            o_y = -min_y + excess_height / 2
+
+        return s_x, s_y, o_x, o_y
+
+    # Case 2: Scale document up until viewbox fills doc in Y.
+
+    s_y = d_height / height
+    s_x = s_y  # Uniform aspect ratio
+    o_y = -min_y
+
+    scaled_vb_width = height / ar_doc
+    excess_width = scaled_vb_width - width
+
+    if par_align in {"xminymin", "xminymid", "xminymax"}:
+        o_x = -min_x  # Case: X-Min: Align viewbox to minimum X of the viewport.
+
+    elif par_align in {"xmaxymin", "xmaxymid", "xmaxymax"}:
+        o_x = -min_x + excess_width  # Case: X-Max: Align viewbox to maximum X of the viewport.
+
+    else:  # par_align in {"xmidymin", "xmidymid", "xmidymax"}:
+        o_x = -min_x + excess_width / 2  # Default case: X-Mid: Center viewbox on page in X
+
+    return s_x, s_y, o_x, o_y
 
 
 def points_equal(point_a, point_b):
@@ -786,7 +937,7 @@ def pathdata_first_point(path):
     Output: Two floats in a list representing the x and y coordinates of the first point
     """
 
-    parsed_path = simplepath.parsePath(path) # parsePath splits path into segments
+    parsed_path = simplepath.parsePath(path)  # parsePath splits path into segments
 
     for command, params in parsed_path:
         if command == 'M':
@@ -803,8 +954,8 @@ def pathdata_last_point(path):
     Input:  A path data string; the text of the 'd' attribute of an SVG path
     Output: Two floats in a list representing the x and y coordinates of the last point
     """
-    parsed_path = simplepath.parsePath(path) # parsePath splits path into segments
-    command, params = parsed_path[-1] # look at the last command to determine the last point
+    parsed_path = simplepath.parsePath(path)  # parsePath splits path into segments
+    command, params = parsed_path[-1]  # look at the last command to determine the last point
 
     if command.upper() == 'Z':
         # find the last move command, since Z moves to the start of the last subpath
@@ -824,7 +975,7 @@ def pathdata_last_point(path):
     #
     #     MLCQA: Commands all ending in (X,Y) pair.
 
-    x_val = params[-2] # Second to last parameter given
-    y_val = params[-1] # Last parameter given
+    x_val = params[-2]  # Second to last parameter given
+    y_val = params[-1]  # Last parameter given
 
     return [x_val, y_val]
