@@ -13,7 +13,7 @@ See __version__ below for version information
 
 The MIT License (MIT)
 
-Copyright (c) 2024 Windell H. Oskay, Bantam Tools
+Copyright (c) 2025 Windell H. Oskay, Bantam Tools
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,7 +44,7 @@ ffgeom = from_dependency_import('ink_extensions.ffgeom')
 
 def version():    # Version number for this document
     """Return version number of this script"""
-    return "0.4.1" # Dated 2024-05-13
+    return "0.5.0" # Dated 2025-07-13
 
 __version__ = version()
 
@@ -694,6 +694,145 @@ def vb_scale(v_b, p_a_r, doc_width, doc_height):
 
     return s_x, s_y, o_x, o_y
     # return 1, 1, 0, 0 # Catch-all: return default transform
+
+
+def _validate_viewbox(viewbox_string, doc_width, doc_height):
+    """
+    Validate viewBox parameters and return parsed values or None if invalid.
+    
+    Returns:
+        tuple (min_x, min_y, width, height, d_width, d_height) for valid viewBox
+        None for invalid viewBox
+    """
+    if viewbox_string is None:
+        return None
+    
+    try:
+        vb_array = viewbox_string.strip().replace(',', ' ').split()
+    except AttributeError:
+        return None
+        
+    if len(vb_array) < 4:
+        return None
+        
+    try:
+        min_x = float(vb_array[0])
+        min_y = float(vb_array[1])
+        width = float(vb_array[2])
+        height = float(vb_array[3])
+    except (ValueError, IndexError):
+        return None
+        
+    if width <= 0 or height <= 0:
+        return None
+        
+    d_width = float(doc_width)
+    d_height = float(doc_height)
+    
+    if d_width <= 0 or d_height <= 0:
+        return None
+        
+    return min_x, min_y, width, height, d_width, d_height
+
+
+def vb_scale_2(viewbox_string, preserve_aspect_ratio, doc_width, doc_height):
+    """
+    Enhanced version of vb_scale that returns None for invalid viewBox.
+    
+    Parse SVG viewbox and generate scaling parameters.
+    Reference documentation: https://www.w3.org/TR/SVG11/coords.html
+
+    Inputs:
+        viewbox_string:      Contents of SVG viewbox attribute
+        preserve_aspect_ratio: Contents of SVG preserveAspectRatio attribute
+        doc_width:          Width of SVG document (in inches)
+        doc_height:         Height of SVG document (in inches)
+
+    Returns:
+        tuple (s_x, s_y, o_x, o_y) for valid viewBox - scale and offset parameters
+        None for invalid viewBox
+    """
+    validated = _validate_viewbox(viewbox_string, doc_width, doc_height)
+    if validated is None:
+        return None
+    
+    min_x, min_y, width, height, d_width, d_height = validated
+    
+    # Use the same logic as the original vb_scale function
+    ar_doc = d_height / d_width # Document aspect ratio
+    ar_vb = height / width      # viewbox aspect ratio
+
+    # Default values of the two preserveAspectRatio parameters:
+    par_mos = "meet"  # meetOrSlice parameter can be "meet" or "slice"
+    par_align = "xmidymid"  # alignment parameter
+
+    if preserve_aspect_ratio is not None:
+        p_a_r_string = preserve_aspect_ratio.strip()
+        par_list = p_a_r_string.split()
+        if len(par_list) > 0:
+            # First parameter of preserveAspectRatio is the alignment parameter
+            # Values like "none", "xMinYMin", "xMidYMin", etc. are valid values.
+            par_align = par_list[0].lower()
+        if len(par_list) > 1:
+            # Second parameter of preserveAspectRatio is the meetOrSlice parameter
+            # Values include "meet" and "slice"
+            par_mos = par_list[1].lower()
+
+    if par_align == "none":
+        # Easy case -- no aspect ratio preservation needed
+        s_x = d_width / width
+        s_y = d_height / height
+        o_x = -min_x
+        o_y = -min_y
+        return s_x, s_y, o_x, o_y
+
+    # Preserve aspect ratio:
+    # Apply scaling to align the viewbox to the viewport.
+
+    if (((ar_doc >= ar_vb) and (par_mos == "meet"))
+            or ((ar_doc < ar_vb) and (par_mos == "slice"))):
+        # Case 1: Scale document up until viewbox fills doc in X.
+
+        s_x = d_width / width
+        s_y = s_x # Uniform aspect ratio
+        o_x = -min_x
+
+        scaled_vb_height = ar_doc * width
+        excess_height = scaled_vb_height - height
+
+        if par_align in {"xminymin", "xmidymin", "xmaxymin"}:
+            # Case: Y-Min: Align viewbox to minimum Y of the viewport.
+            o_y = -min_y
+
+        elif par_align in {"xminymax", "xmidymax", "xmaxymax"}:
+            # Case: Y-Max: Align viewbox to maximum Y of the viewport.
+            o_y = -min_y + excess_height
+
+        else: # par_align in {"xminymid", "xmidymid", "xmaxymid"}:
+            # Default case: Y-Mid: Center viewbox on page in Y
+            o_y = -min_y + excess_height / 2
+
+        return s_x, s_y, o_x, o_y
+
+    # Case 2: Scale document up until viewbox fills doc in Y.
+
+    s_y = d_height / height
+    s_x = s_y # Uniform aspect ratio
+    o_y = -min_y
+
+    scaled_vb_width = height / ar_doc
+    excess_width = scaled_vb_width - width
+
+    if par_align in {"xminymin", "xminymid", "xminymax"}:
+        o_x = -min_x # Case: X-Min: Align viewbox to minimum X of the viewport.
+
+    elif par_align in {"xmaxymin", "xmaxymid", "xmaxymax"}:
+        o_x = -min_x + excess_width # Case: X-Max: Align viewbox to maximum X of the viewport.
+
+    else: # par_align in {"xmidymin", "xmidymid", "xmidymax"}:
+        o_x = -min_x + excess_width / 2 # Default case: X-Mid: Center viewbox on page in X
+
+    return s_x, s_y, o_x, o_y
 
 
 def points_equal(point_a, point_b):

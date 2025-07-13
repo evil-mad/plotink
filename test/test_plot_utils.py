@@ -392,6 +392,176 @@ class PlotUtilsTestCase(unittest.TestCase):
         move_dist = ebb_motion.moveDistLM(47141172, 141428, 11333) #4478 
         self.assertEqual(move_dist, 4478)
 
+    def test_vb_scale_no_viewbox(self):
+        """ Test vb_scale with None viewbox """
+        result = plot_utils.vb_scale(None, None, 1.0, 1.0)
+        self.assertEqual(result, (1, 1, 0, 0))
+
+    def test_vb_scale_invalid_viewbox_format(self):
+        """ Test vb_scale with invalid viewbox formats """
+        # Less than 4 values
+        result = plot_utils.vb_scale("0 0 100", None, 1.0, 1.0)
+        self.assertEqual(result, (1, 1, 0, 0))
+        
+        # Non-numeric values (should raise ValueError in current implementation)
+        with self.assertRaises(ValueError):
+            plot_utils.vb_scale("0 0 abc 100", None, 1.0, 1.0)
+        
+        # Empty string
+        result = plot_utils.vb_scale("", None, 1.0, 1.0)
+        self.assertEqual(result, (1, 1, 0, 0))
+
+    def test_vb_scale_invalid_viewbox_dimensions(self):
+        """ Test vb_scale with invalid viewbox dimensions """
+        # Zero width
+        result = plot_utils.vb_scale("0 0 0 100", None, 1.0, 1.0)
+        self.assertEqual(result, (1, 1, 0, 0))
+        
+        # Zero height
+        result = plot_utils.vb_scale("0 0 100 0", None, 1.0, 1.0)
+        self.assertEqual(result, (1, 1, 0, 0))
+        
+        # Negative width
+        result = plot_utils.vb_scale("0 0 -100 100", None, 1.0, 1.0)
+        self.assertEqual(result, (1, 1, 0, 0))
+        
+        # Negative height
+        result = plot_utils.vb_scale("0 0 100 -100", None, 1.0, 1.0)
+        self.assertEqual(result, (1, 1, 0, 0))
+
+    def test_vb_scale_invalid_document_dimensions(self):
+        """ Test vb_scale with invalid document dimensions """
+        # Zero document width
+        result = plot_utils.vb_scale("0 0 100 100", None, 0, 1)
+        self.assertEqual(result, (1, 1, 0, 0))
+        
+        # Zero document height
+        result = plot_utils.vb_scale("0 0 100 100", None, 1, 0)
+        self.assertEqual(result, (1, 1, 0, 0))
+        
+        # Negative document width
+        result = plot_utils.vb_scale("0 0 100 100", None, -1, 1)
+        self.assertEqual(result, (1, 1, 0, 0))
+        
+        # Negative document height
+        result = plot_utils.vb_scale("0 0 100 100", None, 1, -1)
+        self.assertEqual(result, (1, 1, 0, 0))
+
+    def test_vb_scale_identity_transform(self):
+        """ Test vb_scale with viewbox that should produce identity transform """
+        # 1:1 mapping in inches - like debug_0b.svg
+        result = plot_utils.vb_scale("0 0 11 8.5", None, 11.0, 8.5)
+        s_x, s_y, o_x, o_y = result
+        # Should be close to (1, 1, 0, 0) but may not be exactly due to unit conversion
+        self.assertAlmostEqual(s_x, 1.0, places=5)
+        self.assertAlmostEqual(s_y, 1.0, places=5)
+        self.assertAlmostEqual(o_x, 0.0, places=5)
+        self.assertAlmostEqual(o_y, 0.0, places=5)
+
+    def test_vb_scale_scaling_required(self):
+        """ Test vb_scale with viewbox requiring scaling - like debug_2b.svg """
+        # viewBox="0 0 279.4 215.9" with width="11in" height="8.5in"
+        result = plot_utils.vb_scale("0 0 279.4 215.9", None, 11.0, 8.5)
+        s_x, s_y, o_x, o_y = result
+        # Should have scaling factors but not (1,1,0,0)
+        self.assertNotEqual(result, (1, 1, 0, 0))
+        self.assertGreater(s_x, 0)
+        self.assertGreater(s_y, 0)
+
+    def test_vb_scale_with_offset(self):
+        """ Test vb_scale with viewbox that has non-zero offset """
+        # Convert 100px to inches: 100px / 96 px/inch = ~1.04 inches
+        doc_size_inches = 100.0 / 96.0
+        result = plot_utils.vb_scale("10 20 100 100", None, doc_size_inches, doc_size_inches)
+        s_x, s_y, o_x, o_y = result
+        self.assertNotEqual(result, (1, 1, 0, 0))
+        # Should have negative offsets to account for viewbox offset
+        self.assertLess(o_x, 0)
+        self.assertLess(o_y, 0)
+
+    def test_vb_scale_comma_separated(self):
+        """ Test vb_scale with comma-separated viewbox """
+        # Convert 100px to inches: 100px / 96 px/inch = ~1.04 inches
+        doc_size_inches = 100.0 / 96.0
+        result = plot_utils.vb_scale("0,0,100,100", None, doc_size_inches, doc_size_inches)
+        s_x, s_y, o_x, o_y = result
+        self.assertNotEqual(result, (1, 1, 0, 0))
+        self.assertGreater(s_x, 0)
+        self.assertGreater(s_y, 0)
+
+    def test_vb_scale_pixel_units(self):
+        """ Test vb_scale with pixel-based units """
+        # Test a case where viewBox matches document in pixels
+        # 96px document = 1 inch, viewBox "0 0 96 96" should give scale close to 1/96
+        result = plot_utils.vb_scale("0 0 96 96", None, 1.0, 1.0)
+        s_x, s_y, o_x, o_y = result
+        self.assertNotEqual(result, (1, 1, 0, 0))
+        self.assertAlmostEqual(s_x, 1.0/96.0, places=5)
+        self.assertAlmostEqual(s_y, 1.0/96.0, places=5)
+
+    def test_vb_scale_2_none_for_invalid_viewbox(self):
+        """ Test vb_scale_2 returns None for invalid viewBox cases """
+        # No viewBox
+        result = plot_utils.vb_scale_2(None, None, 1.0, 1.0)
+        self.assertIsNone(result)
+        
+        # Less than 4 values
+        result = plot_utils.vb_scale_2("0 0 100", None, 1.0, 1.0)
+        self.assertIsNone(result)
+        
+        # Non-numeric values
+        result = plot_utils.vb_scale_2("0 0 abc 100", None, 1.0, 1.0)
+        self.assertIsNone(result)
+        
+        # Zero width
+        result = plot_utils.vb_scale_2("0 0 0 100", None, 1.0, 1.0)
+        self.assertIsNone(result)
+        
+        # Negative height
+        result = plot_utils.vb_scale_2("0 0 100 -100", None, 1.0, 1.0)
+        self.assertIsNone(result)
+        
+        # Zero document width
+        result = plot_utils.vb_scale_2("0 0 100 100", None, 0, 1.0)
+        self.assertIsNone(result)
+
+    def test_vb_scale_2_valid_viewbox_cases(self):
+        """ Test vb_scale_2 returns valid tuples for valid viewBox cases """
+        # Identity transform case - should match vb_scale result
+        result_original = plot_utils.vb_scale("0 0 11 8.5", None, 11.0, 8.5)
+        result_new = plot_utils.vb_scale_2("0 0 11 8.5", None, 11.0, 8.5)
+        self.assertIsNotNone(result_new)
+        self.assertEqual(result_original, result_new)
+        
+        # Scaling required case - should match vb_scale result
+        result_original = plot_utils.vb_scale("0 0 279.4 215.9", None, 11.0, 8.5)
+        result_new = plot_utils.vb_scale_2("0 0 279.4 215.9", None, 11.0, 8.5)
+        self.assertIsNotNone(result_new)
+        self.assertEqual(result_original, result_new)
+        
+        # Offset case - should match vb_scale result
+        doc_size_inches = 100.0 / 96.0
+        result_original = plot_utils.vb_scale("10 20 100 100", None, doc_size_inches, doc_size_inches)
+        result_new = plot_utils.vb_scale_2("10 20 100 100", None, doc_size_inches, doc_size_inches)
+        self.assertIsNotNone(result_new)
+        self.assertEqual(result_original, result_new)
+
+    def test_vb_scale_2_preserve_aspect_ratio(self):
+        """ Test vb_scale_2 handles preserveAspectRatio correctly """
+        # Test with "none" preserveAspectRatio
+        result = plot_utils.vb_scale_2("0 0 100 200", "none", 2.0, 1.0)
+        self.assertIsNotNone(result)
+        s_x, s_y, o_x, o_y = result
+        # Should not preserve aspect ratio
+        self.assertNotEqual(s_x, s_y)
+        
+        # Test with default preserveAspectRatio (should preserve aspect ratio)
+        result = plot_utils.vb_scale_2("0 0 100 200", None, 2.0, 1.0)
+        self.assertIsNotNone(result)
+        s_x, s_y, o_x, o_y = result
+        # Should preserve aspect ratio
+        self.assertEqual(s_x, s_y)
+
     @staticmethod
     def get_random_points(num, seed=0):
         """ generate random (but deterministic) points where coords are between 0 and 1 """
