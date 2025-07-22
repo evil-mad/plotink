@@ -925,6 +925,56 @@ class PlotUtilsTestCase(unittest.TestCase):
         result = plot_utils.userUnitToUnits(100.0, "xyz")
         self.assertIsNone(result)
 
+    def test_validate_viewbox_infinity_values(self):
+        """Test that infinity values in viewBox are rejected"""
+        # These should all return None (invalid)
+        invalid_cases = [
+            "0 0 inf 100",      # width = infinity
+            "0 0 100 inf",      # height = infinity  
+            "inf 0 100 100",    # x = infinity
+            "0 inf 100 100",    # y = infinity
+            "-inf 0 100 100",   # negative infinity
+            "0 0 1e400 100",    # overflow to infinity
+        ]
+        
+        for viewbox_str in invalid_cases:
+            with self.subTest(viewbox=viewbox_str):
+                result = plot_utils._validate_viewbox(viewbox_str, 100.0, 100.0)
+                self.assertIsNone(result, f"viewBox '{viewbox_str}' should be invalid")
+
+    def test_validate_viewbox_nan_values(self):
+        """Test that NaN values in viewBox are rejected"""  
+        # These should all return None (invalid)
+        invalid_cases = [
+            "0 0 NaN 100",      # width = NaN
+            "0 0 100 NaN",      # height = NaN
+            "NaN 0 100 100",    # x = NaN  
+            "0 NaN 100 100",    # y = NaN
+            "nan 0 100 100",    # lowercase nan
+        ]
+        
+        for viewbox_str in invalid_cases:
+            with self.subTest(viewbox=viewbox_str):
+                result = plot_utils._validate_viewbox(viewbox_str, 100.0, 100.0)
+                self.assertIsNone(result, f"viewBox '{viewbox_str}' should be invalid")
+
+    def test_validate_viewbox_finite_values_still_work(self):
+        """Test that valid finite values still work after changes"""
+        # These should all work (return valid tuples)
+        valid_cases = [
+            ("0 0 100 100", (0.0, 0.0, 100.0, 100.0)),
+            ("0.5 0.5 99.5 99.5", (0.5, 0.5, 99.5, 99.5)), 
+            ("-10 -10 120 120", (-10.0, -10.0, 120.0, 120.0)),
+            ("0 0 1000000 1000000", (0.0, 0.0, 1000000.0, 1000000.0)),
+        ]
+        
+        for viewbox_str, expected in valid_cases:
+            with self.subTest(viewbox=viewbox_str):
+                result = plot_utils._validate_viewbox(viewbox_str, 100.0, 100.0)
+                # The result will include doc_width and doc_height, so adjust expected
+                expected_with_doc = expected + (100.0, 100.0)
+                self.assertEqual(result, expected_with_doc, f"viewBox '{viewbox_str}' should be valid")
+
 
 class MockSvgElement:
     """Mock SVG element for testing getLength and getLengthInches"""
@@ -1121,3 +1171,66 @@ class GetLengthTestCase(unittest.TestCase):
         result = plot_utils.subdivideCubicPath(s_p, -0.5)
         self.assertIsNone(result)  # Function returns None
         self.assertEqual(len(s_p), 2)  # Path unchanged
+
+    def test_clip_segment_division_by_zero_safety(self):
+        """Regression test: verify clip_segment remains safe against division by zero"""
+        # The Cohen-Sutherland algorithm in clip_segment is inherently safe against
+        # division by zero because it only divides when the line is not vertical/horizontal
+        bounds = [[0, 0], [10, 10]]
+        
+        # Vertical line: dx = 0, should not cause division by zero
+        vertical_segment = [[5, -5], [5, 15]]
+        accept, result = plot_utils.clip_segment(vertical_segment, bounds)
+        self.assertTrue(accept)
+        self.assertAlmostEqual(result[0][0], 5.0, places=6)  # x unchanged
+        self.assertAlmostEqual(result[1][0], 5.0, places=6)  # x unchanged
+        self.assertAlmostEqual(result[0][1], 0.0, places=6)  # y clipped to bounds
+        self.assertAlmostEqual(result[1][1], 10.0, places=6) # y clipped to bounds
+        
+        # Horizontal line: dy = 0, should not cause division by zero
+        horizontal_segment = [[-5, 5], [15, 5]]
+        accept, result = plot_utils.clip_segment(horizontal_segment, bounds)
+        self.assertTrue(accept)
+        self.assertAlmostEqual(result[0][1], 5.0, places=6)  # y unchanged
+        self.assertAlmostEqual(result[1][1], 5.0, places=6)  # y unchanged
+        self.assertAlmostEqual(result[0][0], 0.0, places=6)  # x clipped to bounds
+        self.assertAlmostEqual(result[1][0], 10.0, places=6) # x clipped to bounds
+        
+        # Point (degenerate segment): dx = 0, dy = 0
+        point_segment = [[5, 5], [5, 5]]
+        accept, result = plot_utils.clip_segment(point_segment, bounds)
+        self.assertTrue(accept)
+        self.assertAlmostEqual(result[0][0], 5.0, places=6)
+        self.assertAlmostEqual(result[0][1], 5.0, places=6)
+
+    def test_vb_scale_2_division_protection_regression(self):
+        """Regression test: verify vb_scale_2 maintains division by zero protection"""
+        # This tests that the existing protection in _validate_viewbox() continues
+        # to prevent problematic values from reaching vb_scale_2()
+        
+        # Test that zero-width viewBox is rejected by validation (returns None)
+        invalid_viewbox = plot_utils._validate_viewbox("0 0 0 100", 100.0, 100.0)
+        self.assertIsNone(invalid_viewbox, "Zero-width viewBox should be rejected")
+        
+        # Test that zero-height viewBox is rejected by validation (returns None)
+        invalid_viewbox = plot_utils._validate_viewbox("0 0 100 0", 100.0, 100.0)
+        self.assertIsNone(invalid_viewbox, "Zero-height viewBox should be rejected")
+        
+        # Test that negative-width viewBox is rejected by validation (returns None)
+        invalid_viewbox = plot_utils._validate_viewbox("0 0 -100 100", 100.0, 100.0)
+        self.assertIsNone(invalid_viewbox, "Negative-width viewBox should be rejected")
+        
+        # Test that negative-height viewBox is rejected by validation (returns None)
+        invalid_viewbox = plot_utils._validate_viewbox("0 0 100 -100", 100.0, 100.0)
+        self.assertIsNone(invalid_viewbox, "Negative-height viewBox should be rejected")
+        
+        # Test that valid viewBox still works
+        valid_viewbox = plot_utils._validate_viewbox("0 0 100 100", 100.0, 100.0)
+        self.assertIsNotNone(valid_viewbox, "Valid viewBox should be accepted")
+        self.assertEqual(valid_viewbox, (0.0, 0.0, 100.0, 100.0, 100.0, 100.0))
+        
+        # Test vb_scale_2 with valid input (this should work without issues)
+        result = plot_utils.vb_scale_2("0 0 100 100", "none", 100.0, 100.0)
+        self.assertIsNotNone(result, "vb_scale_2 should work with valid viewBox")
+        # Result should be a list/tuple of scaling factors
+        self.assertTrue(len(result) >= 2, "vb_scale_2 should return scaling factors")
