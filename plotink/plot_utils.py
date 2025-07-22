@@ -889,6 +889,8 @@ def square_dist(point_a, point_b):
 
 def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
     """
+    This function is deprecated and should not be used in new code.
+
     Kinematic calculation: Maximum allowed initial velocity to arrive at distance X
     with specified final velocity, and given maximum linear acceleration.
 
@@ -912,6 +914,8 @@ def vInitial_VF_A_Dx(v_final, acceleration, delta_x):
 
 def vFinal_Vi_A_Dx(v_initial, acceleration, delta_x):
     """
+    This function is deprecated and should not be used in new code.
+
     Kinematic calculation: Final velocity with constant linear acceleration.
 
     Calculate and return the (real) final velocity, given an initial velocity,
