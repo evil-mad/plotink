@@ -34,7 +34,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-from math import sqrt, isclose
+from math import sqrt, isclose, isfinite
 
 from .plot_utils_import import from_dependency_import
 cspsubdiv = from_dependency_import('ink_extensions.cspsubdiv')
@@ -733,6 +733,9 @@ def _validate_viewbox(viewbox_string, doc_width, doc_height):
         width = float(vb_array[2])
         height = float(vb_array[3])
     except (ValueError, IndexError):
+        return None
+
+    if not all(isfinite(val) for val in [min_x, min_y, width, height]):
         return None
 
     if width <= 0 or height <= 0:

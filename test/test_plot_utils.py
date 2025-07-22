@@ -925,6 +925,56 @@ class PlotUtilsTestCase(unittest.TestCase):
         result = plot_utils.userUnitToUnits(100.0, "xyz")
         self.assertIsNone(result)
 
+    def test_validate_viewbox_infinity_values(self):
+        """Test that infinity values in viewBox are rejected"""
+        # These should all return None (invalid)
+        invalid_cases = [
+            "0 0 inf 100",      # width = infinity
+            "0 0 100 inf",      # height = infinity  
+            "inf 0 100 100",    # x = infinity
+            "0 inf 100 100",    # y = infinity
+            "-inf 0 100 100",   # negative infinity
+            "0 0 1e400 100",    # overflow to infinity
+        ]
+        
+        for viewbox_str in invalid_cases:
+            with self.subTest(viewbox=viewbox_str):
+                result = plot_utils._validate_viewbox(viewbox_str, 100.0, 100.0)
+                self.assertIsNone(result, f"viewBox '{viewbox_str}' should be invalid")
+
+    def test_validate_viewbox_nan_values(self):
+        """Test that NaN values in viewBox are rejected"""  
+        # These should all return None (invalid)
+        invalid_cases = [
+            "0 0 NaN 100",      # width = NaN
+            "0 0 100 NaN",      # height = NaN
+            "NaN 0 100 100",    # x = NaN  
+            "0 NaN 100 100",    # y = NaN
+            "nan 0 100 100",    # lowercase nan
+        ]
+        
+        for viewbox_str in invalid_cases:
+            with self.subTest(viewbox=viewbox_str):
+                result = plot_utils._validate_viewbox(viewbox_str, 100.0, 100.0)
+                self.assertIsNone(result, f"viewBox '{viewbox_str}' should be invalid")
+
+    def test_validate_viewbox_finite_values_still_work(self):
+        """Test that valid finite values still work after changes"""
+        # These should all work (return valid tuples)
+        valid_cases = [
+            ("0 0 100 100", (0.0, 0.0, 100.0, 100.0)),
+            ("0.5 0.5 99.5 99.5", (0.5, 0.5, 99.5, 99.5)), 
+            ("-10 -10 120 120", (-10.0, -10.0, 120.0, 120.0)),
+            ("0 0 1000000 1000000", (0.0, 0.0, 1000000.0, 1000000.0)),
+        ]
+        
+        for viewbox_str, expected in valid_cases:
+            with self.subTest(viewbox=viewbox_str):
+                result = plot_utils._validate_viewbox(viewbox_str, 100.0, 100.0)
+                # The result will include doc_width and doc_height, so adjust expected
+                expected_with_doc = expected + (100.0, 100.0)
+                self.assertEqual(result, expected_with_doc, f"viewBox '{viewbox_str}' should be valid")
+
 
 class MockSvgElement:
     """Mock SVG element for testing getLength and getLengthInches"""
