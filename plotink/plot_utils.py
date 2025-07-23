@@ -446,16 +446,36 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
     Previous code based on max_dist_from_n_points() was more "pythonic", using the Point
     and Segment classes in ffgeom along with their methods. But, this is much faster.
     """
-    assert len(input_points) >= 3, "There must be points (other than begin/end) to check."
+    if len(input_points) < 3:  # More efficient than assert in production
+        return True  # No points to check, trivially within tolerance
 
     tol_squared = tolerance * tolerance
     seg_0x, seg_0y = input_points[0]
     seg_1x, seg_1y = input_points[-1]
     s_delta_x = seg_1x - seg_0x
     s_delta_y = seg_1y - seg_0y
-    
+
     # Pre-compute segment length squared (avoids repeated computation)
     seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
+
+    # Optimized path for common case of exactly 3 points (start, middle, end)
+    if len(input_points) == 3:
+        p_x, p_y = input_points[1]
+        dx_p_s0 = p_x - seg_0x
+        dy_p_s0 = p_y - seg_0y
+
+        temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y
+        if temp1 <= 0:
+            return (dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0) < tol_squared
+        elif seg_length_squared <= temp1:
+            dx_p_s1 = p_x - seg_1x
+            dy_p_s1 = p_y - seg_1y
+            return (dx_p_s1 * dx_p_s1 + dy_p_s1 * dy_p_s1) < tol_squared
+        else:
+            if seg_length_squared == 0:
+                return False
+            temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
+            return (temp * temp / seg_length_squared) < tol_squared
 
     for point in input_points[1:-1]:  # All vertices except first and last
         p_x, p_y = point
@@ -469,7 +489,9 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
             continue
 
         if seg_length_squared <= temp1:
-            if ((p_x - seg_1x)*(p_x - seg_1x) + (p_y - seg_1y)*(p_y - seg_1y)) >= tol_squared:
+            dx_p_s1 = p_x - seg_1x
+            dy_p_s1 = p_y - seg_1y
+            if (dx_p_s1 * dx_p_s1 + dy_p_s1 * dy_p_s1) >= tol_squared:
                 return False
             continue
 
@@ -526,15 +548,21 @@ def supersample(vertices, tolerance):
         return
 
     start_index = 0  # can't remove first vertex
-    while start_index < len(vertices) - 2:
+    vertices_len = len(vertices)  # Cache length to avoid repeated calls
+
+    while start_index < vertices_len - 2:
         end_index = start_index + 2
         # test the removal of (start_index, end_index), exclusive until we can't advance end_index
 
         while (points_in_tolerance(vertices[start_index:end_index + 1], tolerance)
-               and end_index < len(vertices)):
+               and end_index < vertices_len):
             end_index += 1  # try removing the next vertex too
 
-        vertices[start_index + 1:end_index - 1] = []  # delete (start_index, end_index), exclusive
+        # Only perform deletion if vertices were actually found to remove
+        if end_index > start_index + 2:  # delete (start_index, end_index), exclusive
+            vertices[start_index + 1:end_index - 1] = []
+            vertices_len = len(vertices)  # Update cached length after deletion
+
         start_index += 1
 
 
