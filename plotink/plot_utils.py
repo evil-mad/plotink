@@ -453,6 +453,9 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
     seg_1x, seg_1y = input_points[-1]
     s_delta_x = seg_1x - seg_0x
     s_delta_y = seg_1y - seg_0y
+    
+    # Pre-compute segment length squared (avoids repeated computation)
+    seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
 
     for point in input_points[1:-1]:  # All vertices except first and last
         p_x, p_y = point
@@ -465,7 +468,6 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
                 return False
             continue
 
-        seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
         if seg_length_squared <= temp1:
             if ((p_x - seg_1x)*(p_x - seg_1x) + (p_y - seg_1y)*(p_y - seg_1y)) >= tol_squared:
                 return False
