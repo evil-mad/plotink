@@ -35,7 +35,7 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'test', 'test.*']),
     install_requires=[
-        'ink_extensions>=2.1.0',
+        'ink_extensions>=2.2.0',
         'packaging>=21.0',
         'pyserial>=3.5',
     ],
