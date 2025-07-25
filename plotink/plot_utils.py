@@ -446,7 +446,7 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
     Previous code based on max_dist_from_n_points() was more "pythonic", using the Point
     and Segment classes in ffgeom along with their methods. But, this is much faster.
     """
-    if len(input_points) < 3:  # More efficient than assert in production
+    if len(input_points) < 3:  # Previous versions used assert here.
         return True  # No points to check, trivially within tolerance
 
     tol_squared = tolerance * tolerance
@@ -455,7 +455,7 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
     s_delta_x = seg_1x - seg_0x
     s_delta_y = seg_1y - seg_0y
 
-    # Pre-compute segment length squared (avoids repeated computation)
+    # Pre-compute segment length squared
     seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
 
     # Optimized path for common case of exactly 3 points (start, middle, end)
@@ -475,7 +475,7 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
             if seg_length_squared == 0:
                 return False
             temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
-            return (temp * temp / seg_length_squared) < tol_squared
+            return (temp * temp) < (tol_squared * seg_length_squared)
 
     for point in input_points[1:-1]:  # All vertices except first and last
         p_x, p_y = point
@@ -498,7 +498,7 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
         if seg_length_squared == 0:
             return False  # Zero-length segment; exit.
         temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
-        if (temp * temp / seg_length_squared) >= tol_squared:
+        if (temp * temp) >= (tol_squared * seg_length_squared):
             return False
     return True
 

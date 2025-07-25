@@ -41,7 +41,7 @@ __version__ = "1.1.0"  # Dated 2025-07-23 - Replaced mpmath with decimal (it's f
 import math
 from decimal import Decimal, getcontext, ROUND_HALF_UP
 
-getcontext().prec = 30  # Set precision to match original mpmath precision of 30 decimal places
+# getcontext().prec = 20  # Set precision for calculations. Seems to pass with 17, keep it at 20.
 
 # Constants used in EBB calculations
 EBB_ACCUMULATOR_MAX = 2147483648  # 2^31
@@ -83,9 +83,9 @@ def move_dist_lt(rate, accel, time, accum="clear"):
         accum = 0
         temp_rate = rate - int(accel / 2) + accel
         if temp_rate < 0:
-            accum = 2147483647  # 2^31 - 1
-        elif temp_rate == 0:
-            if accel < 0:
+            accum = 2147483647  # Clear to 2^31 - 1
+        elif temp_rate == 0:  # Special case, if rate==0 during first step
+            if accel < 0:     # Then, check rate at second step.
                 accum = 2147483647
     else:
         accum = int(accum)
@@ -129,11 +129,11 @@ def move_dist_t3(time, rate, accel, jerk, accum="clear"):
     if time == 0:
         return 0, 0
 
-    # Calculate integer divisions with proper rounding (same as original)
-    half_accel = int(accel / 2)  # Truncates towards zero (same as original)
-    jerk_over_six = int(jerk / 6)  # Truncates towards zero (same as original)
+    # Calculate integer divisions with proper rounding
+    half_accel = int(accel / 2)  # Truncates towards zero
+    jerk_over_six = int(jerk / 6)  # Truncates towards zero
 
-    # Handle accumulator initialization (same logic as original)
+    # Handle accumulator initialization
     if accum == "clear":
         accum = 0
         temp_rate = rate - half_accel + jerk_over_six + accel
@@ -149,20 +149,30 @@ def move_dist_t3(time, rate, accel, jerk, accum="clear"):
     else:
         accum = int(accum)
 
+    # Pre-convert integers to Decimal to avoid redundant conversions
+    rate_dec = Decimal(rate)
+    accel_dec = Decimal(accel)
+    jerk_dec = Decimal(jerk)
+    time_dec = Decimal(time)
+    accum_dec = Decimal(accum)
+    half_accel_dec = Decimal(half_accel)
+    jerk_over_six_dec = Decimal(jerk_over_six)
+
+    # Pre-calculate commonly used fractions
+    accel_half = accel_dec / 2
+    jerk_sixth = jerk_dec / 6
+
     # Calculate effective rate using high-precision decimals
     # rate_effective = rate + accel/2 - half_accel + jerk_over_six - jerk/6
-    rate_effective = (Decimal(rate) +
-                      Decimal(accel) / 2 -
-                      Decimal(half_accel) +
-                      Decimal(jerk_over_six) -
-                      Decimal(jerk) / 6)
+    rate_effective = (rate_dec + accel_half - half_accel_dec + jerk_over_six_dec - jerk_sixth)
 
-    # Polynomial evaluation using high-precision decimals
+    # Polynomial evaluation using Horner's method for efficiency
     # accum_final = accum + rate_eff*T + accel*T²/2 + jerk*T³/6
-    accum_final = (Decimal(accum) +
-                   rate_effective * Decimal(time) +
-                   Decimal(accel) * Decimal(time) * Decimal(time) / 2 +
-                   Decimal(jerk) * Decimal(time) * Decimal(time) * Decimal(time) / 6)
+    # Horner's form: accum + T*(rate_eff + T*(accel/2 + T*(jerk/6)))
+    accum_final = (accum_dec +
+                   time_dec * (rate_effective +
+                               time_dec * (accel_half +
+                                           time_dec * jerk_sixth)))
 
     # Round to nearest integer (equivalent to mpmath round())
     accum_final_rounded = int(accum_final.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
@@ -356,7 +366,7 @@ def calculate_lm(steps, rate, accel, accum="clear"):
             neg_root = (-rate_effective - sq_factor) / two_a
             pos_root = (-rate_effective + sq_factor) / two_a
 
-            # Convert to integers using ceiling (same as original)
+            # Convert to integers using ceiling
             neg_root_int = math.ceil(float(neg_root)) if neg_root > 0 else -1
             pos_root_int = math.ceil(float(pos_root)) if pos_root > 0 else -1
 
@@ -376,7 +386,7 @@ def calculate_lm(steps, rate, accel, accum="clear"):
                 else:
                     time_final_star = Decimal(pos_root_int)
 
-    # Round up to get actual time steps (same as original)
+    # Round up to get actual time steps
     time_final = math.ceil(float(time_final_star))
 
     # Calculate final accumulator value
