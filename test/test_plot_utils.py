@@ -1234,3 +1234,125 @@ class GetLengthTestCase(unittest.TestCase):
         self.assertIsNotNone(result, "vb_scale_2 should work with valid viewBox")
         # Result should be a list/tuple of scaling factors
         self.assertTrue(len(result) >= 2, "vb_scale_2 should return scaling factors")
+
+    def test_points_in_tolerance_edge_cases(self):
+        """Test points_in_tolerance with edge cases"""
+        # Less than 3 points: behavior varies between versions
+        # Trusted version: AssertionError, newer version: returns True
+        try:
+            result = plot_utils.points_in_tolerance([], 1.0)
+            self.assertTrue(result)  # Newer version behavior
+        except AssertionError:
+            pass  # Trusted version behavior - acceptable
+        
+        try:
+            result = plot_utils.points_in_tolerance([(0, 0)], 1.0)
+            self.assertTrue(result)  # Newer version behavior
+        except AssertionError:
+            pass  # Trusted version behavior - acceptable
+            
+        try:
+            result = plot_utils.points_in_tolerance([(0, 0), (1, 1)], 1.0)
+            self.assertTrue(result)  # Newer version behavior
+        except AssertionError:
+            pass  # Trusted version behavior - acceptable
+
+    def test_points_in_tolerance_three_points_straight_line(self):
+        """Test points_in_tolerance with 3 points on a straight line"""
+        # Perfect straight line - should be within any positive tolerance
+        points = [(0, 0), (1, 1), (2, 2)]
+        self.assertTrue(plot_utils.points_in_tolerance(points, 0.1))
+        self.assertTrue(plot_utils.points_in_tolerance(points, 0.001))
+
+    def test_points_in_tolerance_three_points_outside_tolerance(self):
+        """Test points_in_tolerance with 3 points where middle point is outside tolerance"""
+        # Middle point is 1 unit away from the line between (0,0) and (2,0)
+        points = [(0, 0), (1, 1), (2, 0)]
+        self.assertFalse(plot_utils.points_in_tolerance(points, 0.5))
+        self.assertTrue(plot_utils.points_in_tolerance(points, 1.5))
+
+    def test_points_in_tolerance_three_points_perpendicular_distance(self):
+        """Test points_in_tolerance with known perpendicular distances"""
+        # Horizontal line from (0,0) to (4,0), middle point at (2,3)
+        # Perpendicular distance from (2,3) to line is exactly 3
+        points = [(0, 0), (2, 3), (4, 0)]
+        self.assertFalse(plot_utils.points_in_tolerance(points, 2.9))
+        self.assertTrue(plot_utils.points_in_tolerance(points, 3.1))
+
+    def test_points_in_tolerance_multiple_points(self):
+        """Test points_in_tolerance with more than 3 points"""
+        # Points along a line with small deviations
+        points = [(0, 0), (1, 0.1), (2, -0.1), (3, 0.1), (4, 0)]
+        self.assertFalse(plot_utils.points_in_tolerance(points, 0.05))
+        self.assertTrue(plot_utils.points_in_tolerance(points, 0.15))
+
+    def test_points_in_tolerance_zero_length_segment(self):
+        """Test points_in_tolerance with zero-length segment (first == last point)"""
+        # When first and last points are the same, any middle point should fail
+        points = [(0, 0), (1, 1), (0, 0)]
+        self.assertFalse(plot_utils.points_in_tolerance(points, 1.0))
+
+    def test_points_in_tolerance_point_at_segment_endpoints(self):
+        """Test points_in_tolerance when middle point is at segment endpoints"""
+        # Middle point exactly at start point
+        points = [(0, 0), (0, 0), (2, 0)]
+        self.assertTrue(plot_utils.points_in_tolerance(points, 0.1))
+        
+        # Middle point exactly at end point
+        points = [(0, 0), (2, 0), (2, 0)]
+        self.assertTrue(plot_utils.points_in_tolerance(points, 0.1))
+
+    def test_points_in_tolerance_point_beyond_segment(self):
+        """Test points_in_tolerance when point projects beyond segment endpoints"""
+        # Point projects before segment start
+        points = [(1, 0), (0, 1), (2, 0)]  # Middle point projects before (1,0)
+        # Distance is from (0,1) to (1,0) = sqrt(2) ≈ 1.414
+        self.assertFalse(plot_utils.points_in_tolerance(points, 1.0))
+        self.assertTrue(plot_utils.points_in_tolerance(points, 1.5))
+        
+        # Point projects after segment end
+        points = [(0, 0), (3, 1), (2, 0)]  # Middle point projects after (2,0)
+        # Distance is from (3,1) to (2,0) = sqrt(2) ≈ 1.414
+        self.assertFalse(plot_utils.points_in_tolerance(points, 1.0))
+        self.assertTrue(plot_utils.points_in_tolerance(points, 1.5))
+
+    def test_points_in_tolerance_exact_tolerance_boundary(self):
+        """Test points_in_tolerance at exact tolerance boundary"""
+        # Create a point exactly at tolerance distance
+        points = [(0, 0), (1, 1), (2, 0)]  # Distance from (1,1) to horizontal line y=0 is 1.0
+        tolerance = 1.0
+        # Should be just within tolerance (< not <=)
+        self.assertTrue(plot_utils.points_in_tolerance(points, tolerance + 1e-10))
+        self.assertFalse(plot_utils.points_in_tolerance(points, tolerance - 1e-10))
+
+    def test_points_in_tolerance_negative_tolerance(self):
+        """Test points_in_tolerance with negative tolerance"""
+        # Negative tolerance squared becomes positive, so perfect lines can still pass
+        points = [(0, 0), (0, 0), (0, 0)]  # All same point
+        self.assertTrue(plot_utils.points_in_tolerance(points, -1.0))  # < 3 points
+        
+        points = [(0, 0), (1, 0), (2, 0)]  # Perfect line - distance is 0
+        self.assertTrue(plot_utils.points_in_tolerance(points, -1.0))  # 0 < (-1)^2 = 1
+
+    def test_points_in_tolerance_zero_tolerance(self):
+        """Test points_in_tolerance with zero tolerance"""
+        # With zero tolerance, even perfect lines fail because comparison is strict < (not <=)
+        points = [(0, 0), (1, 1), (2, 2)]  # Perfect diagonal line, distance = 0
+        self.assertFalse(plot_utils.points_in_tolerance(points, 0.0))  # 0 < 0 is False
+        
+        # Only very small positive tolerance allows perfect lines
+        self.assertTrue(plot_utils.points_in_tolerance(points, 1e-15))
+        
+        points = [(0, 0), (1, 1.001), (2, 2)]  # Slight deviation
+        self.assertFalse(plot_utils.points_in_tolerance(points, 0.0))
+
+    def test_points_in_tolerance_floating_point_precision(self):
+        """Test points_in_tolerance with floating point precision issues"""
+        # Use numbers that might have precision issues
+        points = [(0.1, 0.1), (0.2, 0.2), (0.3, 0.3)]  # Should be perfect line
+        self.assertTrue(plot_utils.points_in_tolerance(points, 1e-10))
+        
+        # Test with very small tolerance and very small deviations
+        points = [(0, 0), (1, 1e-15), (2, 0)]  # Tiny deviation
+        self.assertTrue(plot_utils.points_in_tolerance(points, 1e-14))
+        self.assertFalse(plot_utils.points_in_tolerance(points, 1e-16))

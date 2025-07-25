@@ -416,17 +416,95 @@ def subdivideCubicPath(s_p, flat, i=1):
             p_2 = s_p[i][0]
             p_3 = s_p[i][1]
 
-            b_list = (p_0, p_1, p_2, p_3)
-
-            if not points_in_tolerance(b_list, flat):
+            if not four_points_in_tolerance(p_0, p_1, p_2, p_3, flat):
                 break
             i += 1
 
-        one, two = bezmisc.beziersplitatt(b_list, 0.5)
+        one, two = bezmisc.beziersplitatt((p_0, p_1, p_2, p_3), 0.5)
         s_p[i - 1][2] = one[1]
         s_p[i][0] = two[2]
         p_list = [one[2], one[3], two[1]]
         s_p[i:1] = [p_list]
+
+
+def four_points_in_tolerance(p0, p1, p2, p3, tolerance):
+    """
+    Optimized version of points_in_tolerance for exactly 4 points (Bezier curves).
+
+    This function is specialized for the common case in subdivideCubicPath where we
+    have exactly 4 points representing a cubic Bezier curve. It eliminates the branching
+    and variable-length handling of the general points_in_tolerance function.
+
+    Args:
+        p0, p1, p2, p3: Four points representing a cubic Bezier curve
+        tolerance: Distance tolerance
+
+    Returns:
+        True if p1 and p2 are both within tolerance of the line segment p0->p3
+    """
+    # Pre-compute tolerance squared
+    tol_squared = tolerance * tolerance
+
+    # Segment endpoints
+    seg_0x, seg_0y = p0[0], p0[1]
+    seg_1x, seg_1y = p3[0], p3[1]
+
+    # Segment vector
+    s_delta_x = seg_1x - seg_0x
+    s_delta_y = seg_1y - seg_0y
+    seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
+
+    # Pre-compute for perpendicular distance calculation
+    tol_times_seg_len_sq = tol_squared * seg_length_squared
+
+    # Check point p1 (second point of Bezier curve)
+    p_x, p_y = p1[0], p1[1]
+    dx_p_s0 = p_x - seg_0x
+    dy_p_s0 = p_y - seg_0y
+
+    temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y
+    if temp1 <= 0:
+        # Point projects before segment start
+        if (dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0) >= tol_squared:
+            return False
+    elif seg_length_squared <= temp1:
+        # Point projects beyond segment end
+        dx_p_s1 = p_x - seg_1x
+        dy_p_s1 = p_y - seg_1y
+        if (dx_p_s1 * dx_p_s1 + dy_p_s1 * dy_p_s1) >= tol_squared:
+            return False
+    else:
+        # Point projects onto segment - check perpendicular distance
+        if seg_length_squared == 0:
+            return False
+        temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
+        if (temp * temp) >= tol_times_seg_len_sq:
+            return False
+
+    # Check point p2 (third point of Bezier curve)
+    p_x, p_y = p2[0], p2[1]
+    dx_p_s0 = p_x - seg_0x
+    dy_p_s0 = p_y - seg_0y
+
+    temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y
+    if temp1 <= 0:
+        # Point projects before segment start
+        if (dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0) >= tol_squared:
+            return False
+    elif seg_length_squared <= temp1:
+        # Point projects beyond segment end
+        dx_p_s1 = p_x - seg_1x
+        dy_p_s1 = p_y - seg_1y
+        if (dx_p_s1 * dx_p_s1 + dy_p_s1 * dy_p_s1) >= tol_squared:
+            return False
+    else:
+        # Point projects onto segment - check perpendicular distance
+        if seg_length_squared == 0:
+            return False
+        temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
+        if (temp * temp) >= tol_times_seg_len_sq:
+            return False
+    return True
 
 
 def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-locals
@@ -446,13 +524,36 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
     Previous code based on max_dist_from_n_points() was more "pythonic", using the Point
     and Segment classes in ffgeom along with their methods. But, this is much faster.
     """
-    assert len(input_points) >= 3, "There must be points (other than begin/end) to check."
+    if len(input_points) < 3:  # Previous versions used assert here.
+        return True  # No points to check, trivially within tolerance
 
     tol_squared = tolerance * tolerance
     seg_0x, seg_0y = input_points[0]
     seg_1x, seg_1y = input_points[-1]
     s_delta_x = seg_1x - seg_0x
     s_delta_y = seg_1y - seg_0y
+
+    # Pre-compute segment length squared
+    seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
+
+    # Optimized path for common case of exactly 3 points (start, middle, end)
+    if len(input_points) == 3:
+        p_x, p_y = input_points[1]
+        dx_p_s0 = p_x - seg_0x
+        dy_p_s0 = p_y - seg_0y
+
+        temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y
+        if temp1 <= 0:
+            return (dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0) < tol_squared
+        elif seg_length_squared <= temp1:
+            dx_p_s1 = p_x - seg_1x
+            dy_p_s1 = p_y - seg_1y
+            return (dx_p_s1 * dx_p_s1 + dy_p_s1 * dy_p_s1) < tol_squared
+        else:
+            if seg_length_squared == 0:
+                return False
+            temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
+            return (temp * temp) < (tol_squared * seg_length_squared)
 
     for point in input_points[1:-1]:  # All vertices except first and last
         p_x, p_y = point
@@ -465,16 +566,17 @@ def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-lo
                 return False
             continue
 
-        seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
         if seg_length_squared <= temp1:
-            if ((p_x - seg_1x)*(p_x - seg_1x) + (p_y - seg_1y)*(p_y - seg_1y)) >= tol_squared:
+            dx_p_s1 = p_x - seg_1x
+            dy_p_s1 = p_y - seg_1y
+            if (dx_p_s1 * dx_p_s1 + dy_p_s1 * dy_p_s1) >= tol_squared:
                 return False
             continue
 
         if seg_length_squared == 0:
             return False  # Zero-length segment; exit.
         temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
-        if (temp * temp / seg_length_squared) >= tol_squared:
+        if (temp * temp) >= (tol_squared * seg_length_squared):
             return False
     return True
 
@@ -524,15 +626,21 @@ def supersample(vertices, tolerance):
         return
 
     start_index = 0  # can't remove first vertex
-    while start_index < len(vertices) - 2:
+    vertices_len = len(vertices)  # Cache length to avoid repeated calls
+
+    while start_index < vertices_len - 2:
         end_index = start_index + 2
         # test the removal of (start_index, end_index), exclusive until we can't advance end_index
 
         while (points_in_tolerance(vertices[start_index:end_index + 1], tolerance)
-               and end_index < len(vertices)):
+               and end_index < vertices_len):
             end_index += 1  # try removing the next vertex too
 
-        vertices[start_index + 1:end_index - 1] = []  # delete (start_index, end_index), exclusive
+        # Only perform deletion if vertices were actually found to remove
+        if end_index > start_index + 2:  # delete (start_index, end_index), exclusive
+            vertices[start_index + 1:end_index - 1] = []
+            vertices_len = len(vertices)  # Update cached length after deletion
+
         start_index += 1
 
 
@@ -944,7 +1052,7 @@ def pathdata_first_point(path):
     Output: Two floats in a list representing the x and y coordinates of the first point
     """
 
-    parsed_path = simplepath.parsePath(path)  # parsePath splits path into segments
+    parsed_path = simplepath.parsePath2(path)  # parsePath splits path into segments
 
     for command, params in parsed_path:
         if command == 'M':
@@ -961,7 +1069,7 @@ def pathdata_last_point(path):
     Input:  A path data string; the text of the 'd' attribute of an SVG path
     Output: Two floats in a list representing the x and y coordinates of the last point
     """
-    parsed_path = simplepath.parsePath(path)  # parsePath splits path into segments
+    parsed_path = simplepath.parsePath2(path)  # parsePath splits path into segments
     command, params = parsed_path[-1]  # look at the last command to determine the last point
 
     if command.upper() == 'Z':
