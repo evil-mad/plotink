@@ -416,17 +416,95 @@ def subdivideCubicPath(s_p, flat, i=1):
             p_2 = s_p[i][0]
             p_3 = s_p[i][1]
 
-            b_list = (p_0, p_1, p_2, p_3)
-
-            if not points_in_tolerance(b_list, flat):
+            if not four_points_in_tolerance(p_0, p_1, p_2, p_3, flat):
                 break
             i += 1
 
-        one, two = bezmisc.beziersplitatt(b_list, 0.5)
+        one, two = bezmisc.beziersplitatt((p_0, p_1, p_2, p_3), 0.5)
         s_p[i - 1][2] = one[1]
         s_p[i][0] = two[2]
         p_list = [one[2], one[3], two[1]]
         s_p[i:1] = [p_list]
+
+
+def four_points_in_tolerance(p0, p1, p2, p3, tolerance):
+    """
+    Optimized version of points_in_tolerance for exactly 4 points (Bezier curves).
+
+    This function is specialized for the common case in subdivideCubicPath where we
+    have exactly 4 points representing a cubic Bezier curve. It eliminates the branching
+    and variable-length handling of the general points_in_tolerance function.
+
+    Args:
+        p0, p1, p2, p3: Four points representing a cubic Bezier curve
+        tolerance: Distance tolerance
+
+    Returns:
+        True if p1 and p2 are both within tolerance of the line segment p0->p3
+    """
+    # Pre-compute tolerance squared
+    tol_squared = tolerance * tolerance
+
+    # Segment endpoints
+    seg_0x, seg_0y = p0[0], p0[1]
+    seg_1x, seg_1y = p3[0], p3[1]
+
+    # Segment vector
+    s_delta_x = seg_1x - seg_0x
+    s_delta_y = seg_1y - seg_0y
+    seg_length_squared = s_delta_x * s_delta_x + s_delta_y * s_delta_y
+
+    # Pre-compute for perpendicular distance calculation
+    tol_times_seg_len_sq = tol_squared * seg_length_squared
+
+    # Check point p1 (second point of Bezier curve)
+    p_x, p_y = p1[0], p1[1]
+    dx_p_s0 = p_x - seg_0x
+    dy_p_s0 = p_y - seg_0y
+
+    temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y
+    if temp1 <= 0:
+        # Point projects before segment start
+        if (dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0) >= tol_squared:
+            return False
+    elif seg_length_squared <= temp1:
+        # Point projects beyond segment end
+        dx_p_s1 = p_x - seg_1x
+        dy_p_s1 = p_y - seg_1y
+        if (dx_p_s1 * dx_p_s1 + dy_p_s1 * dy_p_s1) >= tol_squared:
+            return False
+    else:
+        # Point projects onto segment - check perpendicular distance
+        if seg_length_squared == 0:
+            return False
+        temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
+        if (temp * temp) >= tol_times_seg_len_sq:
+            return False
+
+    # Check point p2 (third point of Bezier curve)
+    p_x, p_y = p2[0], p2[1]
+    dx_p_s0 = p_x - seg_0x
+    dy_p_s0 = p_y - seg_0y
+
+    temp1 = dx_p_s0 * s_delta_x + dy_p_s0 * s_delta_y
+    if temp1 <= 0:
+        # Point projects before segment start
+        if (dx_p_s0 * dx_p_s0 + dy_p_s0 * dy_p_s0) >= tol_squared:
+            return False
+    elif seg_length_squared <= temp1:
+        # Point projects beyond segment end
+        dx_p_s1 = p_x - seg_1x
+        dy_p_s1 = p_y - seg_1y
+        if (dx_p_s1 * dx_p_s1 + dy_p_s1 * dy_p_s1) >= tol_squared:
+            return False
+    else:
+        # Point projects onto segment - check perpendicular distance
+        if seg_length_squared == 0:
+            return False
+        temp = dx_p_s0 * s_delta_y - s_delta_x * dy_p_s0
+        if (temp * temp) >= tol_times_seg_len_sq:
+            return False
+    return True
 
 
 def points_in_tolerance(input_points, tolerance):  # pylint: disable=too-many-locals
