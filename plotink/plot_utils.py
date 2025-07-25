@@ -974,7 +974,7 @@ def pathdata_first_point(path):
     Output: Two floats in a list representing the x and y coordinates of the first point
     """
 
-    parsed_path = simplepath.parsePath(path)  # parsePath splits path into segments
+    parsed_path = simplepath.parsePath2(path)  # parsePath splits path into segments
 
     for command, params in parsed_path:
         if command == 'M':
@@ -991,7 +991,7 @@ def pathdata_last_point(path):
     Input:  A path data string; the text of the 'd' attribute of an SVG path
     Output: Two floats in a list representing the x and y coordinates of the last point
     """
-    parsed_path = simplepath.parsePath(path)  # parsePath splits path into segments
+    parsed_path = simplepath.parsePath2(path)  # parsePath splits path into segments
     command, params = parsed_path[-1]  # look at the last command to determine the last point
 
     if command.upper() == 'Z':
