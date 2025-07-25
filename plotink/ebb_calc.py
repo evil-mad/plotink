@@ -41,7 +41,7 @@ __version__ = "1.1.0"  # Dated 2025-07-23 - Replaced mpmath with decimal (it's f
 import math
 from decimal import Decimal, getcontext, ROUND_HALF_UP
 
-# getcontext().prec = 20  # Set precision for calculations. Seems to pass with 17, keep it at 20.
+getcontext().prec = 20  # Set precision for calculations. Seems to pass with 17, keep it at 20.
 
 # Constants used in EBB calculations
 EBB_ACCUMULATOR_MAX = 2147483648  # 2^31
