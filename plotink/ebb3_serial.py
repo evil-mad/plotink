@@ -34,7 +34,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__version__ = '0.2.2'  # Dated 2026-03-07
+__version__ = '0.2.3'  # Dated 2026-03-08
 
 from packaging.version import parse, InvalidVersion
 
@@ -108,6 +108,7 @@ class EBB3:
             return False
         try:
             self.port.write('BL\r'.encode('ascii'))
+            self.port.flush()
             self.disconnect()
             return True
         except (serial.SerialException, serial.serialutil.PortNotOpenError):
