@@ -508,6 +508,19 @@ class RebootBootloadTestCase(unittest.TestCase):
         self.assertTrue(result)
         self.assertIsNone(ebb.port)
 
+    def test_bootload_flushes_before_close(self):
+        """Verify flush() is called before disconnect() so the BL command
+        is fully transmitted over USB before the port is closed."""
+        ebb = ebb3_serial.EBB3()
+        mock_port = MagicMock()
+        call_order = []
+        mock_port.flush.side_effect = lambda: call_order.append('flush')
+        mock_port.close.side_effect = lambda: call_order.append('close')
+        ebb.port = mock_port
+        result = ebb.bootload()
+        self.assertTrue(result)
+        self.assertEqual(call_order, ['flush', 'close'])
+
     def test_bootload_no_port(self):
         ebb = ebb3_serial.EBB3()
         result = ebb.bootload()

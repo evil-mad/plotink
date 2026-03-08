@@ -108,6 +108,7 @@ class EBB3:
             return False
         try:
             self.port.write('BL\r'.encode('ascii'))
+            self.port.flush()
             self.disconnect()
             return True
         except (serial.SerialException, serial.serialutil.PortNotOpenError):
