@@ -275,6 +275,8 @@ class EBB3:
         Return None if version_string cannot be parsed as a version number. 
         '''
 
+        if self.version_parsed is None:
+            return None
         try:
             parsed_version_string = parse(version_string)
         except InvalidVersion:

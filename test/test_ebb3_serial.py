@@ -70,6 +70,11 @@ class MinVersionTestCase(unittest.TestCase):
     def test_invalid_version_string(self):
         self.assertIsNone(self.ebb.min_version("not_a_version"))
 
+    def test_unparsed_device_version(self):
+        """min_version returns None when device version is unknown."""
+        ebb = ebb3_serial.EBB3()  # version_parsed is None
+        self.assertIsNone(ebb.min_version("3.0.2"))
+
 
 class FindFirstTestCase(unittest.TestCase):
     """Tests for EBB3.find_first() with mocked comports."""
