@@ -13,7 +13,7 @@ See __version__ below for version information
 
 The MIT License (MIT)
 
-Copyright (c) 2024 Windell H. Oskay, Bantam Tools
+Copyright (c) 2026 Windell H. Oskay, Bantam Tools
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__version__ = '0.2.1'  # Dated 2024-5-28
+__version__ = '0.2.2'  # Dated 2026-03-07
 
 from packaging.version import parse, InvalidVersion
 
@@ -225,7 +225,7 @@ class EBB3:
             self.port.reset_input_buffer() # Requires pyserial 3+.
 
             self.port.write('v\r'.encode('ascii'))    # Request version string.
-            str_version = self.port.readline().decode('ascii').strip()
+            str_version = self.port.readline().decode('ascii', errors='replace').strip()
 
             if str_version:
                 if "EBB" in str_version:
@@ -234,12 +234,12 @@ class EBB3:
             if not verified:
                 # Second try at verifying connection, if first has failed:
                 self.port.write('v\r'.encode('ascii'))    # Request version string.
-                str_version = self.port.readline().decode('ascii').strip()
+                str_version = self.port.readline().decode('ascii', errors='replace').strip()
                 if str_version:
                     if "EBB" in str_version:
                         verified = True
 
-        except serial.SerialException:
+        except (serial.SerialException, UnicodeDecodeError):
             self.record_error(f"Error testing USB connection (port name: {self.port_name})")
             self.disconnect() # Try to close the port, in case it is open.
 
@@ -275,6 +275,8 @@ class EBB3:
         Return None if version_string cannot be parsed as a version number. 
         '''
 
+        if self.version_parsed is None:
+            return None
         try:
             parsed_version_string = parse(version_string)
         except InvalidVersion:
@@ -307,12 +309,12 @@ class EBB3:
         response = ''
         try:
             self.port.write((cmd + '\r').encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
+            response = self.port.readline().decode('ascii', errors='replace').strip()
 
             n_retry_count = 0
             while len(response) == 0 and n_retry_count < 25:
                 # get new response to replace null response if necessary
-                response = self.port.readline().decode('ascii').strip()
+                response = self.port.readline().decode('ascii', errors='replace').strip()
                 n_retry_count += 1
 
             if not response.startswith(cmd_name):
@@ -362,12 +364,12 @@ class EBB3:
         response = ''
         try:
             self.port.write((qry + '\r').encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
+            response = self.port.readline().decode('ascii', errors='replace').strip()
 
             n_retry_count = 0
             while len(response) == 0 and n_retry_count < 25:
                 # get new response to replace null response if necessary
-                response = self.port.readline().decode('ascii').strip()
+                response = self.port.readline().decode('ascii', errors='replace').strip()
                 n_retry_count += 1
 
         except (serial.SerialException, IOError, RuntimeError, OSError):
@@ -405,7 +407,7 @@ class EBB3:
         response = ''
         try:
             self.port.write('QG\r'.encode('ascii'))
-            response = self.port.readline().decode('ascii').strip()
+            response = self.port.readline().decode('ascii', errors='replace').strip()
 
             if not response.startswith('QG'):
                 if response:
