@@ -39,9 +39,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__version__ = "1.1" # Dated 2024-05-13
+__version__ = "1.2" # Dated 2026-10-02
 
 import math
+
+LEAF_SIZE = 16  # Nodes with this many bboxes or fewer are not subdivided
+
+# Nodes are not subdivided when the quadrant lists together would hold more
+# than this multiple of the node's bbox count
+DUPLICATION_LIMIT = 1.5
 
 def version():    # Version number for this document
     """Return version number of this script"""
@@ -70,30 +76,38 @@ class Index:
             self.xmax = max(self.xmax, xmax)
             self.ymax = max(self.ymax, ymax)
 
-        # Make four lists of bboxes, one for each quadrant around the center point
-        # An original bbox may be present in more than one list
+        if len(bboxes) <= LEAF_SIZE:
+            self.bboxes = bboxes
+            return
+
+        # Make four lists of bboxes, one for each quadrant around the center point.
+        # A bbox is placed in every quadrant that it touches, including quadrants
+        # that it meets only at the center lines, so that no bbox can be omitted.
         sub_bboxes = [
             [
                 (i, (x_1, y_1, x_2, y_2)) for (i, (x_1, y_1, x_2, y_2)) in bboxes
-                if x_1 < center_x and y_1 < center_y
+                if x_1 <= center_x and y_1 <= center_y
             ],
             [
                 (i, (x_1, y_1, x_2, y_2)) for (i, (x_1, y_1, x_2, y_2)) in bboxes
-                if x_2 > center_x and y_1 < center_y
+                if x_2 >= center_x and y_1 <= center_y
             ],
             [
                 (i, (x_1, y_1, x_2, y_2)) for (i, (x_1, y_1, x_2, y_2)) in bboxes
-                if x_1 < center_x and y_2 > center_y
+                if x_1 <= center_x and y_2 >= center_y
             ],
             [
                 (i, (x_1, y_1, x_2, y_2)) for (i, (x_1, y_1, x_2, y_2)) in bboxes
-                if x_2 > center_x and y_2 > center_y
+                if x_2 >= center_x and y_2 >= center_y
             ],
         ]
 
-        # Store bboxes or subtrees but not both
-        if max(map(len, sub_bboxes)) == len(bboxes):
-            # One of the subtrees is identical to the whole tree so just keep all the bboxes
+        # Store bboxes or subtrees but not both. Keep all the bboxes in this node
+        # when splitting would not reduce the work: when one quadrant holds every
+        # bbox, or when bboxes that straddle the center lines would be duplicated
+        # into several quadrants.
+        if (max(map(len, sub_bboxes)) == len(bboxes) or
+                sum(map(len, sub_bboxes)) > DUPLICATION_LIMIT * len(bboxes)):
             self.bboxes = bboxes
         else:
             # Make four subtrees, one for each quadrant
