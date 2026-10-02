@@ -24,9 +24,10 @@ setup(
     author='Bantam Tools',
     author_email='hello@bantamtools.com',
     description="Helper routines for use with plotters",
+    license='MIT',
+    license_files=['LICENSE'],
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
-        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Development Status :: 5 - Production/Stable",
         "Natural Language :: English",
